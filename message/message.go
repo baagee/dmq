@@ -2,7 +2,7 @@ package message
 
 import (
 	"dmq/redis"
-	"log"
+	"encoding/json"
 )
 
 type Message struct {
@@ -11,25 +11,32 @@ type Message struct {
 	Cmd       string
 	Timestamp uint64
 	Params    string
-	List      string
+	Bucket    string
 }
 
-func (this *Message) Save() {
-	// zset value 储存时刻任务列表名字eg:23456754:point score 执行时间戳
+func (this *Message) Save() error {
+	//保存项目时间点  timestamp:point
 	point, err := redis.SavePoint(this.Timestamp, this.Project)
-	log.Println("point=" + point)
 	if err != nil {
-		log.Println(err.Error())
+		return err
 	} else {
-		key, err := redis.SaveList(point, this.List)
+		//保存此时间点下的bucket point:bucket
+		pointBucket, err := redis.SaveBucket(point, this.Bucket)
 		if err != nil {
-			log.Print(err.Error())
+			return err
 		} else {
-			log.Println("list key=" + key)
-			// hash 结构储存每个时间点下面每个项目的任务列表详情
-			err := redis.SaveDetail(key, this.Cmd, this.Timestamp, this.Params, this.Project, this.Id)
+			jsonBytes, err := json.Marshal(*this)
 			if err != nil {
-				log.Println(err.Error())
+				return err
+			} else {
+				msgJson := string(jsonBytes)
+				// 向这个point:bucket lpush 放详细任务信息
+				err := redis.SaveDetail(pointBucket, msgJson)
+				if err != nil {
+					return err
+				} else {
+					return nil
+				}
 			}
 		}
 	}

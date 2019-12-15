@@ -1,7 +1,7 @@
 package redis
 
 import (
-	"encoding/json"
+	"dmq/util"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"log"
@@ -25,91 +25,62 @@ func init() {
 	log.Println("redis pool init")
 }
 
+//保存时间点
 func SavePoint(timestamp uint64, project string) (string, error) {
 	redisCli := pool.Get()
 	defer redisCli.Close()
-	point := fmt.Sprintf("%s:%d:point", project, timestamp)
-	res, err := redis.Int64(redisCli.Do("zAdd", getPointKey(project), timestamp, point))
+	point := fmt.Sprintf("%d:point", timestamp)
+	_, err := redis.Int64(redisCli.Do("zAdd", util.GetPointKey(project), timestamp, point))
 	if err != nil {
 		return "", err
-	} else {
-		log.Println("savePOint:", res)
 	}
 	return point, nil
 }
 
-//相同list的消息储存在一个列表
-func SaveList(point string, list string) (string, error) {
-	key := GetFullList(point, list)
+//相同bucket的消息储存在一个列表
+func SaveBucket(point string, bucket string) (string, error) {
+	key := util.GetFullBucket(point, bucket)
 	redisCli := pool.Get()
 	defer redisCli.Close()
-	res, err := redis.Int64(redisCli.Do("sAdd", point, list))
+	_, err := redis.Int64(redisCli.Do("sAdd", point, bucket))
 	if err != nil {
 		return "", err
-	} else {
-		log.Println(key)
-		log.Println("save list :", res)
 	}
 	return key, nil
 }
 
-func GetFullList(point string, list string) string {
-	key := fmt.Sprintf("%s:%s", point, list)
-	return key
-}
-
-func SaveDetail(key string, cmd string, timestamp uint64, params string, project string, id uint64) error {
-	//key := fmt.Sprintf("%s:%s", point, list)
+//保存消息详情
+func SaveDetail(pointBucket string, msgJson string) error {
 	redisCli := pool.Get()
 	defer redisCli.Close()
-	msg := make(map[string]string)
-	msg = map[string]string{
-		"project":   project,
-		"cmd":       cmd,
-		"timestamp": strconv.FormatUint(timestamp, 10),
-		"params":    params,
-		"id":        strconv.FormatUint(id, 10),
-	}
-	jsonBytes, err := json.Marshal(msg)
+
+	//向list放任务详情 同一个时间点 同一个list类型的任务详情
+	_, err := redis.Int64(redisCli.Do("lPush", pointBucket, msgJson))
 	if err != nil {
-		log.Println(err.Error())
 		return err
 	} else {
-		log.Println(string(jsonBytes))
-		//向list放任务详情 同一个时间点 同一个list类型的任务详情
-		res, err := redis.Int64(redisCli.Do("lPush", key, string(jsonBytes)))
-		if err != nil {
-			//log.Println(err.Error())
-			return err
-		} else {
-			//当前队列的长度
-			log.Println("SaveDetail: ", res)
-			return nil
-		}
+		//当前队列的长度
+		return nil
 	}
 }
 
+//获取最近的时间点
 func GetPoint(project string) (string, error) {
 	redisCli := pool.Get()
 	defer redisCli.Close()
-	mainKey := getPointKey(project)
+	mainKey := util.GetPointKey(project)
 	res, err := redis.Strings(redisCli.Do("zRange", mainKey, 0, 0, "WITHSCORES"))
 	if err != nil {
 		return "", err
 	} else {
-		//log.Println(res)
 		if len(res) >= 1 {
 			timePoint, _ := strconv.ParseInt(res[1], 10, 64)
 			curTime := time.Now().Unix()
-			//log.Println(timePoint, curTime)
 			if curTime >= timePoint {
-				log.Println("到点可以执行了")
 				// 删除
-				ef, _ := redis.Int(redisCli.Do("zRem", mainKey, res[0]))
-				log.Println("删除point结果：", ef)
+				redisCli.Do("zRem", mainKey, res[0])
 				return res[0], nil
 			} else {
-				log.Println("还未到时间：", res[1])
 				return "", nil
 			}
 		} else {
@@ -118,38 +89,29 @@ func GetPoint(project string) (string, error) {
 	}
 }
 
-func GetList(point string) ([]string, error) {
+// 获取时间点对应的bucket列表
+func GetBucket(point string) ([]string, error) {
 	redisCli := pool.Get()
 	defer redisCli.Close()
 	list, err := redis.Strings(redisCli.Do("sMembers", point))
 	if err != nil {
 		return []string{}, err
 	} else {
-		//log.Println(list)
 		//删除这个point
-		ef, _ := redis.Int(redisCli.Do("del", point))
-		log.Println("删除pointList结果：", ef)
-		for i, v := range list {
-			list[i] = GetFullList(point, v)
-		}
+		redisCli.Do("del", point)
 		return list, nil
 	}
 }
 
-func getPointKey(project string) string {
-	mainKey := fmt.Sprintf("mmq:%s:points", project)
-	return mainKey
-}
-
-func GetListDetail(list string) ([]string, error) {
-	//log.Println(list)
+//获取bucket对应的任务详情
+func GetBucketDetail(bucket string) ([]string, error) {
 	redisCli := pool.Get()
 	defer redisCli.Close()
 	var detailList []string
 	for {
-		itemDetail, err := redis.String(redisCli.Do("rPop", list))
+		itemDetail, err := redis.String(redisCli.Do("rPop", bucket))
 		if err == redis.ErrNil {
-			log.Println("redis rpop读取完毕")
+			//log.Println("redis rpop读取完毕")
 			break
 		} else {
 			if itemDetail != "" {
