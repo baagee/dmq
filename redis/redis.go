@@ -11,15 +11,28 @@ import (
 
 var pool *redis.Pool
 
-func init() {
+func InitPool(config map[string]string) {
 	//初始化redis连接池
+	maxIdle, err := strconv.Atoi(config["max_idle"])
+	if err != nil {
+		maxIdle = 20
+	}
+	maxActive, err := strconv.Atoi(config["max_active"])
+	if err != nil {
+		maxActive = 100
+	}
+	port, err := strconv.Atoi(config["port"])
+	if err != nil {
+		port = 6379
+	}
+
 	pool = &redis.Pool{
-		MaxIdle:     160, //池中最大空闲连接数
-		MaxActive:   920, //在给定时间池分配的最大连接数
-		IdleTimeout: 120, //在此时间保持空闲后关闭连接
+		MaxIdle:     maxIdle,   //池中最大空闲连接数
+		MaxActive:   maxActive, //在给定时间池分配的最大连接数
+		IdleTimeout: 120,       //在此时间保持空闲后关闭连接
 		Dial: func() (redis.Conn, error) {
 			//连接redis
-			return redis.Dial("tcp", "127.0.0.1:6379")
+			return redis.Dial("tcp", fmt.Sprintf("%s:%d", config["host"], port))
 		},
 	}
 	log.Println("redis pool init")
