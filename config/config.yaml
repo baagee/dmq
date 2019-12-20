@@ -14,7 +14,7 @@ product_list:
 redis:
   host: 127.0.0.1
   port: 6379
-#  password:
+  password:
   db: 2 #数据库
   pool_size: 1000 # 连接池大小
   max_retries: 3 # 重试次数
@@ -22,8 +22,8 @@ redis:
   max_retry_backoff: 400 # 重试最大间隔 单位ms
   read_timeout: 1 # 读超时 单位s
   write_timeout: 2 # 写超时 单位s
-#  min_idle_conns: 200 # 最小空闲连接数
-#  pool_timeout: 5 # 客户端等待连接的时间 默认值为ReadTimeout + 1秒
+  min_idle_conns: 200 # 最小空闲连接数
+  pool_timeout: 5 # 客户端等待连接的时间 默认值为ReadTimeout + 1秒
 
 # 命令列表
 command_list:
