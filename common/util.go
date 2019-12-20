@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"net"
 	"net/http"
@@ -68,7 +69,7 @@ func GenerateIds(count int64) []uint64 {
 	var ids []uint64
 	number, err := RedisCli.IncrBy(fmt.Sprintf("%s:%s", RedisKeyPrefix, IdIncrKey), count).Result()
 	if err != nil {
-		fmt.Println("GenerateIds err:" + err.Error())
+		log.Println("GenerateIds err:" + err.Error())
 		//降级 使用时间戳
 		number = time.Now().Unix()
 	}
@@ -81,18 +82,22 @@ func GenerateIds(count int64) []uint64 {
 	return ids
 }
 
+//获取时间点分组的key 按照项目分组
 func GetPointGroup(project string) string {
 	return fmt.Sprintf("%s:%s:points", RedisKeyPrefix, project)
 }
 
+// 获取消息触发时间点名字
 func GetPointName(project string, timestamp uint64) string {
 	return fmt.Sprintf("%s:%s:point:%d", RedisKeyPrefix, project, timestamp)
 }
 
+// 获取消息bucket名字
 func GetBucketName(bucket string, pointName string) string {
 	return fmt.Sprintf("%s:%s", pointName, bucket)
 }
 
+// 获取储存消息的list名字
 func GetMessageListName(bucketName string) string {
 	return fmt.Sprintf("%s:messages", bucketName)
 }

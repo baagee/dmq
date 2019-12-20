@@ -23,15 +23,9 @@ func validateSingleRequest(single singleRequest) error {
 		for _, itemErr := range err.(validator9.ValidationErrors) {
 			if errt != nil {
 				log.Println("RegisterDefaultTranslations " + errt.Error())
-				return common.Notice{
-					CodeInt: common.ErrorCodeValidateFailed,
-					Err:     err,
-				}
+				return common.ThrowNotice(common.ErrorCodeValidateFailed, err)
 			} else {
-				return common.Notice{
-					CodeInt: common.ErrorCodeValidateFailed,
-					Err:     errors.New(itemErr.Translate(trans)),
-				}
+				return common.ThrowNotice(common.ErrorCodeValidateFailed, errors.New(itemErr.Translate(trans)))
 			}
 		}
 	}

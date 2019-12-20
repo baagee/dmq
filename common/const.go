@@ -1,6 +1,8 @@
 package common
 
 const (
+	// redis key 前缀
 	RedisKeyPrefix = "dmq"
-	IdIncrKey      = "message:id:incr"
+	// 自增ID的key
+	IdIncrKey = "message:id:incr"
 )

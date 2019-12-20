@@ -21,10 +21,7 @@ func (m *Message) Save() error {
 	log.Printf("save: %+v\n", *m)
 	bytes, err := json.Marshal(*m)
 	if err != nil {
-		return Notice{
-			CodeInt: ErrorCodeJsonMarshal,
-			Err:     err,
-		}
+		return ThrowNotice(ErrorCodeJsonMarshal, err)
 	}
 
 	// 开始redis事务
@@ -45,10 +42,7 @@ func (m *Message) Save() error {
 	//提交
 	_, err = redisTx.Exec()
 	if err != nil {
-		return Notice{
-			CodeInt: ErrorCodeRedisSave,
-			Err:     err,
-		}
+		return ThrowNotice(ErrorCodeRedisSave, err)
 	}
 	return nil
 }

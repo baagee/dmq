@@ -66,38 +66,23 @@ type consumerConfig struct {
 func init() {
 	if len(os.Args) < 2 {
 		//传入配置文件路径
-		ExitWithNotice(Notice{
-			CodeInt: 1,
-			Err:     errors.New("请输入配置文件路径"),
-		})
+		ExitWithNotice(ThrowNotice(1, errors.New("请输入配置文件路径")))
 	}
 	configPath, err := filepath.Abs(os.Args[1])
 	if err != nil {
-		ExitWithNotice(Notice{
-			CodeInt: 1,
-			Err:     err,
-		})
+		ExitWithNotice(ThrowNotice(1, err))
 	}
 	baseConfigFile, err := filepath.Abs(configPath + "/" + "config.yaml")
 	if err != nil {
-		ExitWithNotice(Notice{
-			CodeInt: 1,
-			Err:     err,
-		})
+		ExitWithNotice(ThrowNotice(1, err))
 	}
 	if FileExists(baseConfigFile) == false {
-		ExitWithNotice(Notice{
-			CodeInt: 1,
-			Err:     errors.New("config.yaml配置文件不存在"),
-		})
+		ExitWithNotice(ThrowNotice(1, errors.New("config.yaml配置文件不存在")))
 	}
 
 	err = GetYamlConfig(baseConfigFile, &Config)
 	if err != nil {
-		ExitWithNotice(Notice{
-			CodeInt: 1,
-			Err:     err,
-		})
+		ExitWithNotice(ThrowNotice(1, err))
 	}
 	var (
 		cmdConfigFile string
@@ -106,17 +91,11 @@ func init() {
 	for _, cFile := range Config.CommandFileList {
 		cmdConfigFile = configPath + "/" + cFile
 		if FileExists(cmdConfigFile) == false {
-			ExitWithNotice(Notice{
-				CodeInt: 1,
-				Err:     errors.New(fmt.Sprintf("%s 文件不存在", cFile)),
-			})
+			ExitWithNotice(ThrowNotice(1, errors.New(fmt.Sprintf("%s 文件不存在", cFile))))
 		}
 		err := GetYamlConfig(cmdConfigFile, &commandConfig)
 		if err != nil {
-			ExitWithNotice(Notice{
-				CodeInt: 1,
-				Err:     err,
-			})
+			ExitWithNotice(ThrowNotice(1, err))
 		}
 		Config.CommandList = append(Config.CommandList, commandConfig)
 	}

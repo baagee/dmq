@@ -34,10 +34,7 @@ func SingleMessage(writer http.ResponseWriter, request *http.Request) {
 
 	var single singleRequest
 	if err := json.NewDecoder(request.Body).Decode(&single); err != nil {
-		responseWithError(writer, common.Notice{
-			CodeInt: common.ErrorCodeParseParamsFailed,
-			Err:     errors.New("不是合法的json"),
-		})
+		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("不是合法的json")))
 		return
 	}
 
@@ -61,10 +58,7 @@ func BatchMessage(writer http.ResponseWriter, request *http.Request) {
 
 	var singleList batchRequest
 	if err := json.NewDecoder(request.Body).Decode(&singleList); err != nil {
-		responseWithError(writer, common.Notice{
-			CodeInt: common.ErrorCodeParseParamsFailed,
-			Err:     errors.New("不是合法的json"),
-		})
+		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("不是合法的json")))
 		return
 	}
 	// 验证参数
@@ -138,10 +132,7 @@ func checkCommand(request singleRequest) error {
 			return nil
 		}
 	}
-	return common.Notice{
-		CodeInt: common.ErrorCodeUnknowCommand,
-		Err:     errors.New("存在未知的cmd"),
-	}
+	return common.ThrowNotice(common.ErrorCodeUnknowCommand, errors.New("存在未知的cmd"))
 }
 
 // 验证来源
@@ -157,10 +148,7 @@ func checkProduct(request singleRequest, ip string) error {
 			}
 		}
 	}
-	return common.Notice{
-		CodeInt: common.ErrorCodeUnknowProduct,
-		Err:     errors.New("不合法的消息来源"),
-	}
+	return common.ThrowNotice(common.ErrorCodeUnknowProduct, errors.New("不合法的消息来源"))
 }
 
 //输出错误信息

@@ -10,20 +10,27 @@ const (
 	ErrorCodeRedisSave         = 160
 )
 
-type Throw interface {
+type ThrowAble interface {
 	error
 	Code() int
 }
 
 type Notice struct {
-	CodeInt int
-	Err     error
+	code int
+	err  error
+}
+
+func ThrowNotice(code int, err error) Notice {
+	return Notice{
+		code: code,
+		err:  err,
+	}
 }
 
 func (n Notice) Error() string {
-	return n.Err.Error()
+	return n.err.Error()
 }
 
 func (n Notice) Code() int {
-	return n.CodeInt
+	return n.code
 }

@@ -32,9 +32,6 @@ func (app *App) BindRouter() *App {
 func (app *App) Run(port uint) {
 	log.Printf("http://127.0.0.1:%d\n", port)
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
-		common.ExitWithNotice(common.Notice{
-			CodeInt: 1,
-			Err:     err,
-		})
+		common.ExitWithNotice(common.ThrowNotice(1, err))
 	}
 }
