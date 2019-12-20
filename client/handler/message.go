@@ -91,12 +91,13 @@ func save(singleList batchRequest) []bool {
 			single.Timestamp = uint64(time.Now().Unix())
 		}
 		msg := common.Message{
-			Id:        ids[i],
-			Cmd:       single.Cmd,
-			Timestamp: single.Timestamp,
-			Params:    single.Params,
-			Project:   single.Project,
-			Bucket:    single.Bucket,
+			Id:         ids[i],
+			Cmd:        single.Cmd,
+			Timestamp:  single.Timestamp,
+			Params:     single.Params,
+			Project:    single.Project,
+			Bucket:     single.Bucket,
+			CreateTime: uint64(time.Now().Unix()),
 		}
 		err := msg.Save()
 		if err != nil {

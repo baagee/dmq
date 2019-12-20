@@ -7,12 +7,13 @@ import (
 )
 
 type Message struct {
-	Id        uint64 `json:"id"`                          // 消息ID
-	Cmd       string `json:"cmd" validator:"required"`    // command
-	Timestamp uint64 `json:"timestamp"`                   // 执行时间
-	Params    string `json:"params"`                      // 命令参数
-	Project   string `json:"project"`                     // 项目
-	Bucket    string `json:"bucket" validator:"required"` // 消息桶
+	Id         uint64 `json:"id"`          // 消息ID
+	Cmd        string `json:"cmd"`         // command
+	Timestamp  uint64 `json:"timestamp"`   // 执行时间
+	Params     string `json:"params"`      // 命令参数
+	Project    string `json:"project"`     // 项目
+	Bucket     string `json:"bucket"`      // 消息桶
+	CreateTime uint64 `json:"create_time"` // 创建时间
 }
 
 //保存消息
