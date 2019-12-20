@@ -1,0 +1,26 @@
+# http端口号
+http_port: 8989
+# 允许的项目名字
+product_list:
+  - project: svs
+    allow_ip:
+      - 127.0.0.1
+
+  - project: sds
+    allow_ip:
+      - 127.0.0.1
+
+# redis配置
+redis:
+  host: 127.0.0.1
+  port: 6379
+  password:
+  db: 2
+  pool_size: 1000
+  max_retries: 3
+
+
+# 命令列表
+command_list:
+  - cmd-svs-create-order.yaml # 另一个配置文件的路径
+  - cmd-svs-notice-user.yaml

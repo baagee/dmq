@@ -1,0 +1,14 @@
+# 属于哪个项目 如果sds发送了一个 svs:create:order 的命令就不会成功
+# 如果多个羡慕的cmd重名了怎么办？？cmd上加前缀/后缀啊... 还能怎么办
+project: svs
+# 命令点
+command: svs:notice:user
+# 请求下游的接口列表 可以是多个下游消费
+consumer_list:
+  - host: 127.0.0.1:9091
+    path: "/api/notice/user"
+    conn_timeout: 6 #s
+    read_timeout: 6
+    write_timeout: 6
+    retry_times: 8 # 重试次数
+    interval: 300 #ms

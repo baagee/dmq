@@ -1,4 +1,0 @@
-host: 127.0.0.1
-port: 6379
-max_idle: 200
-max_active: 900
