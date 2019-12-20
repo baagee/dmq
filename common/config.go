@@ -24,12 +24,18 @@ type baseConfig struct {
 
 //redis配置信息
 type redisConfig struct {
-	Host       string `yaml:"host"`
-	Port       uint   `yaml:"port"`
-	Password   string `yaml:"password"`
-	Db         uint   `yaml:"db"`
-	PoolSize   uint   `yaml:"pool_size"`
-	MaxRetries uint   `yaml:"max_retries"`
+	Host            string `yaml:"host"`
+	Port            uint   `yaml:"port"`
+	Password        string `yaml:"password"`
+	Db              uint   `yaml:"db"`
+	PoolSize        uint   `yaml:"pool_size"`
+	MaxRetries      uint   `yaml:"max_retries"`
+	MinRetryBackoff uint   `yaml:"min_retry_backoff"`
+	MaxRetryBackoff uint   `yaml:"max_retry_backoff"`
+	ReadTimeout     uint   `yaml:"read_timeout"`
+	WriteTimeout    uint   `yaml:"write_timeout"`
+	MinIdleConns    uint   `yaml:"min_idle_conns"`
+	PoolTimeout     uint   `yaml:"pool_timeout"`
 }
 
 // command配置
