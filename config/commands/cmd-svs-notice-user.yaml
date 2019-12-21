@@ -5,10 +5,8 @@ project: svs
 command: svs:notice:user
 # 请求下游的接口列表 可以是多个下游消费
 consumer_list:
-  - host: 127.0.0.1:9091
-    path: "/api/notice/user"
-    conn_timeout: 6 #s
-    read_timeout: 6
-    write_timeout: 6
-    retry_times: 8 # 重试次数
+  - host: 127.0.0.1:8959
+    path: "/api/mytest/test/noticeuser"
+    timeout: 600 #ms
+    retry_times: 3 # 重试次数
     interval: 300 #ms

@@ -59,13 +59,13 @@ type productConfig struct {
 
 // 消费者配置
 type ConsumerConfig struct {
-	Host         string `yaml:"host"`
-	Path         string `yaml:"path"`
-	ConnTimeout  uint   `yaml:"conn_timeout"`
-	ReadTimeout  uint   `yaml:"read_timeout"`
-	WriteTimeout uint   `yaml:"write_timeout"`
-	RetryTimes   uint   `yaml:"retry_times"`
-	Interval     uint   `yaml:"interval"`
+	Host    string `yaml:"host"`
+	Path    string `yaml:"path"`
+	Timeout uint   `yaml:"timeout"`
+	//ReadTimeout  uint   `yaml:"read_timeout"`
+	//WriteTimeout uint   `yaml:"write_timeout"`
+	RetryTimes uint `yaml:"retry_times"`
+	Interval   uint `yaml:"interval"`
 }
 
 // 解析配置文件

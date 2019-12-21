@@ -12,6 +12,9 @@ const (
 	ErrorCodeFoundPointFailed    = 180
 	ErrorCodeRemovePointFailed   = 190
 	ErrorCodeRemoveBucketsFailed = 200
+	ErrorCodeResponseCodeNot200  = 201
+	ErrorCodePreRequestFailed    = 202
+	ErrorCodeRequestFailed       = 203
 )
 
 type ThrowAble interface {

@@ -1,6 +1,8 @@
 package common
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -126,4 +128,32 @@ func RecordError(err error) {
 	default:
 		log.Printf("Error: %s", n.Error())
 	}
+}
+
+// http post请求
+func HttpPost(url string, params string, timeout uint) error {
+	var jsonBytes = []byte(params)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
+	if err != nil {
+		return ThrowNotice(ErrorCodePreRequestFailed, err)
+	}
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	client := &http.Client{
+		Timeout: time.Duration(timeout) * time.Millisecond,
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		//if strings.Contains(err.Error(), "Client.Timeout exceeded") {
+		//	fmt.Println("HTTP post timeout")
+		//}
+		return ThrowNotice(ErrorCodeRequestFailed, err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	log.Println("response Body:", string(body))
+	if resp.StatusCode != 200 {
+		return ThrowNotice(ErrorCodeResponseCodeNot200, errors.New("response code!=200"))
+	}
+	return nil
 }

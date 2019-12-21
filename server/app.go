@@ -2,8 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/baagee/dmq/common"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -105,8 +108,8 @@ func (app *App) DoMessageCmd() {
 		//log.Println(consumerList)
 		for _, consumer := range consumerList {
 			// 一个协程处理一个消费者
-			requestConsumer(consumer, &msg)
-			//go requestConsumer(consumer, &msg)
+			//requestConsumer(consumer, &msg)
+			go requestConsumer(consumer, &msg)
 		}
 	}
 }
@@ -116,8 +119,30 @@ func requestConsumer(consumer common.ConsumerConfig, msg *common.Message) {
 	// 状态设置组成正在做
 	msg.SetMessageStatus(consumer.Host, consumer.Path, common.MessageStatusDoing)
 	log.Printf("%s%s %d 消费 %d %s\n", consumer.Host, consumer.Path, time.Now().Unix(), msg.Timestamp, msg.Cmd)
-	// 成功后改状态为消费成功
-	msg.SetMessageStatus(consumer.Host, consumer.Path, common.MessageStatusDone)
-	// 失败后改状态为消费失败
-	msg.SetMessageStatus(consumer.Host, consumer.Path, common.MessageStatusFailed)
+	url := fmt.Sprintf("%s%s", consumer.Host, consumer.Path)
+	if strings.Index(url, "http") == -1 {
+		//不是http开头的 加上http
+		url = fmt.Sprintf("http://%s", url)
+	}
+	var t uint
+	success := false
+	// 重试机制
+	for t = 0; t <= consumer.RetryTimes; t++ {
+		err := common.HttpPost(url, msg.Params, consumer.Timeout)
+		if err != nil {
+			common.RecordError(errors.New(fmt.Sprintf("retry=%d %s", t, err.Error())))
+			//稍微休息一下
+			time.Sleep(time.Duration(consumer.Interval) * time.Millisecond)
+			continue
+		}
+		success = true
+		break
+	}
+	if success {
+		// 成功后改状态为消费成功
+		msg.SetMessageStatus(consumer.Host, consumer.Path, common.MessageStatusDone)
+	} else {
+		// 失败后改状态为消费失败
+		msg.SetMessageStatus(consumer.Host, consumer.Path, common.MessageStatusFailed)
+	}
 }
