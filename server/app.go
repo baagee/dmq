@@ -133,7 +133,10 @@ func requestConsumer(consumer common.ConsumerConfig, msg *common.Message) {
 			field := common.GetMessageStatusHashField(msg.Id, consumer.Host, consumer.Path)
 			common.RecordError(errors.New(fmt.Sprintf("%s retry=%d %s", field, retry, err.Error())))
 			//稍微休息一下
-			time.Sleep(time.Duration(consumer.Interval) * time.Millisecond)
+			if retry < consumer.RetryTimes {
+				// 最后一次不需要休息了
+				time.Sleep(time.Duration(consumer.Interval*(retry+1)) * time.Millisecond)
+			}
 			continue
 		}
 		success = true
