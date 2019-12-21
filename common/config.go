@@ -46,7 +46,7 @@ type redisConfig struct {
 type commandConfig struct {
 	Project      string           `yaml:"project"`
 	Command      string           `yaml:"command"`
-	ConsumerList []consumerConfig `yaml:"consumer_list"`
+	ConsumerList []ConsumerConfig `yaml:"consumer_list"`
 }
 
 // 生产者
@@ -56,7 +56,7 @@ type productConfig struct {
 }
 
 // 消费者配置
-type consumerConfig struct {
+type ConsumerConfig struct {
 	Host         string `yaml:"host"`
 	Path         string `yaml:"path"`
 	ConnTimeout  uint   `yaml:"conn_timeout"`
@@ -70,23 +70,23 @@ type consumerConfig struct {
 func init() {
 	if len(os.Args) < 2 {
 		//传入配置文件路径
-		ExitWithNotice(ThrowNotice(1, errors.New("请输入配置文件路径")))
+		ExitWithNotice(ThrowNotice(ErrorCodeDefault, errors.New("请输入配置文件路径")))
 	}
 	configPath, err := filepath.Abs(os.Args[1])
 	if err != nil {
-		ExitWithNotice(ThrowNotice(1, err))
+		ExitWithNotice(ThrowNotice(ErrorCodeDefault, err))
 	}
 	baseConfigFile, err := filepath.Abs(configPath + "/" + "config.yaml")
 	if err != nil {
-		ExitWithNotice(ThrowNotice(1, err))
+		ExitWithNotice(ThrowNotice(ErrorCodeDefault, err))
 	}
 	if FileExists(baseConfigFile) == false {
-		ExitWithNotice(ThrowNotice(1, errors.New("config.yaml配置文件不存在")))
+		ExitWithNotice(ThrowNotice(ErrorCodeDefault, errors.New("config.yaml配置文件不存在")))
 	}
 
 	err = GetYamlConfig(baseConfigFile, &Config)
 	if err != nil {
-		ExitWithNotice(ThrowNotice(1, err))
+		ExitWithNotice(ThrowNotice(ErrorCodeDefault, err))
 	}
 	var (
 		cmdConfigFile string
@@ -96,11 +96,11 @@ func init() {
 	for _, cFile := range Config.CommandFileList {
 		cmdConfigFile = configPath + "/" + cFile
 		if FileExists(cmdConfigFile) == false {
-			ExitWithNotice(ThrowNotice(1, errors.New(fmt.Sprintf("%s 文件不存在", cFile))))
+			ExitWithNotice(ThrowNotice(ErrorCodeDefault, errors.New(fmt.Sprintf("%s 文件不存在", cFile))))
 		}
 		err := GetYamlConfig(cmdConfigFile, &commandConf)
 		if err != nil {
-			ExitWithNotice(ThrowNotice(1, err))
+			ExitWithNotice(ThrowNotice(ErrorCodeDefault, err))
 		}
 		Config.CommandMap[GetConfigCmdKey(commandConf.Command)] = commandConf
 	}

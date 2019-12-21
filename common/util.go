@@ -109,11 +109,11 @@ func GetMessageStatusHashName(timestamp uint64, project string) string {
 }
 
 //	获取消息状态的hash field key
-func GetMessageStatusHashField(id uint64, host string, path string) string {
-	return fmt.Sprintf("%s:%d:%s%s", RedisKeyPrefix, id, host, path)
+func GetMessageStatusHashField(msgId uint64, host string, path string) string {
+	return fmt.Sprintf("%s:%d:%s%s", RedisKeyPrefix, msgId, host, path)
 }
 
-//获取配置信息的mcd map key
+//获取配置信息的cmd map key
 func GetConfigCmdKey(cmd string) string {
 	return fmt.Sprintf("cmd-%s", strings.Replace(cmd, ":", "-", -1))
 }
