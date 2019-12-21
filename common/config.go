@@ -17,6 +17,7 @@ var (
 type baseConfig struct {
 	HttpPort             uint            `yaml:"http_port"`
 	ProductList          []productConfig `yaml:"product_list"`
+	MsgNoRepeatDay       uint            `yaml:"msg_no_repeat_day"`
 	GetPointSleep        uint            `yaml:"get_point_sleep"`
 	MsgPointChanLen      uint            `yaml:"msg_point_chan_len"`
 	MsgBucketChanLen     uint            `yaml:"msg_bucket_chan_len"`

@@ -92,13 +92,22 @@ func save(singleList batchRequest) []interface{} {
 			Bucket:     single.Bucket,
 			CreateTime: uint64(time.Now().Unix()),
 		}
-		err := msg.Save()
-		if err != nil {
-			common.RecordError(err)
-			ret[i] = false //失败返回false
+		// 验证消息是否重复
+		// 获取消息hash 查询redis判断是否存在
+		if mId := msg.CheckExists(); mId == 0 {
+			// 不存在 就保存
+			err := msg.Save()
+			if err != nil {
+				common.RecordError(err)
+				ret[i] = false //失败返回false
+				continue
+			} /*else{
+				// nothing
+			}*/
 		} else {
-			ret[i] = msg.Id //成功返回消息ID
+			msg.Id = mId //返回已存在的消息ID
 		}
+		ret[i] = msg.Id //返回消息ID
 	}
 	//返回每个是成功还是失败
 	return ret

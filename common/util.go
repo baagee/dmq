@@ -2,6 +2,7 @@ package common
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"errors"
 	"fmt"
 	"gopkg.in/yaml.v2"
@@ -121,6 +122,11 @@ func GetConfigCmdKey(cmd string) string {
 	return fmt.Sprintf("cmd-%s", strings.Replace(cmd, ":", "-", -1))
 }
 
+// 消息是否存在的hash key
+func GetMsgRedisFlagKey(hash string) string {
+	return fmt.Sprintf("%s:msg:hash:%s", RedisKeyPrefix, hash)
+}
+
 // 记录错误信息
 func RecordError(err error) {
 	switch n := err.(type) {
@@ -183,4 +189,11 @@ func GetConsumerFullUrl(host string, path string, msgId uint64) string {
 		urlStr += fmt.Sprintf("?msg_id=%d", msgId)
 	}
 	return urlStr
+}
+
+//获取字符串hash
+func StringHash(data string) string {
+	t := sha1.New()
+	t.Write([]byte(data))
+	return fmt.Sprintf("%x", t.Sum(nil))
 }

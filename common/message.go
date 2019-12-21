@@ -3,8 +3,11 @@ package common
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/go-redis/redis"
 	"log"
+	"strconv"
+	"time"
 )
 
 const (
@@ -22,12 +25,11 @@ type Message struct {
 	Project    string `json:"project"`     // 项目
 	Bucket     string `json:"bucket"`      // 消息桶
 	CreateTime uint64 `json:"create_time"` // 创建时间
+	hash       string // 消息体唯一标示 下游获取不到 因为json encode时就没有了
 }
 
 //保存消息
 func (m *Message) Save() error {
-	// TODO 消息去重
-	//log.Printf("save: %+v\n", *m)
 	bytes, err := json.Marshal(*m)
 	if err != nil {
 		return ThrowNotice(ErrorCodeJsonMarshal, err)
@@ -41,7 +43,8 @@ func (m *Message) Save() error {
 		for _, consumer := range cm.ConsumerList {
 			messageStatusMap[GetMessageStatusHashField(m.Id, consumer.Host, consumer.Path)] = MessageStatusDefault
 		}
-
+		// 消息标记过期时间 从现在到消息的执行时间后n天 这段时间不允许重复
+		expireTime := time.Duration(m.Timestamp+3600*24*uint64(Config.MsgNoRepeatDay)-uint64(time.Now().Unix())) * time.Second
 		// 开始redis事务
 		redisTx := RedisCli.TxPipeline()
 		// 1 保存point
@@ -60,6 +63,8 @@ func (m *Message) Save() error {
 		//4 将任务状态保存
 		messageStatusHashKey := GetMessageStatusHashName(m.Timestamp, m.Project)
 		redisTx.HMSet(messageStatusHashKey, messageStatusMap)
+		// 5 增加消息标记 便于去重
+		redisTx.Set(GetMsgRedisFlagKey(m.hash), m.Id, expireTime)
 		//提交
 		_, err = redisTx.Exec()
 		if err != nil {
@@ -69,6 +74,21 @@ func (m *Message) Save() error {
 		return ThrowNotice(ErrorCodeRedisSave, errors.New("不合法的cmd"))
 	}
 	return nil
+}
+
+//检查消息是否存在 存在就返回已存在的消息ID
+func (m *Message) CheckExists() uint64 {
+	m.hash = StringHash(fmt.Sprintf("%s:%d:%s:%s:%s", m.Cmd, m.Timestamp, m.Params, m.Project, m.Bucket))
+	ret, err := RedisCli.Get(GetMsgRedisFlagKey(m.hash)).Result()
+	if err != nil {
+		// 不存在
+		return 0
+	}
+	beforeId, err := strconv.Atoi(ret)
+	if err != nil {
+		return 0
+	}
+	return uint64(beforeId)
 }
 
 //获取最近的时间点
