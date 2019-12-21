@@ -69,7 +69,7 @@ func GenerateIds(count int64) []uint64 {
 	var ids []uint64
 	number, err := RedisCli.IncrBy(fmt.Sprintf("%s:%s", RedisKeyPrefix, IdIncrKey), count).Result()
 	if err != nil {
-		log.Println("GenerateIds err:" + err.Error())
+		RecordError(err)
 		//降级 使用时间戳
 		number = time.Now().Unix()
 	}
@@ -116,4 +116,14 @@ func GetMessageStatusHashField(id uint64, host string, path string) string {
 //获取配置信息的mcd map key
 func GetConfigCmdKey(cmd string) string {
 	return fmt.Sprintf("cmd-%s", strings.Replace(cmd, ":", "-", -1))
+}
+
+// 记录错误信息
+func RecordError(err error) {
+	switch n := err.(type) {
+	case Notice:
+		log.Printf("Notice Error：[%d] %s", n.Code(), n.Error())
+	default:
+		log.Printf("Error: %s", n.Error())
+	}
 }

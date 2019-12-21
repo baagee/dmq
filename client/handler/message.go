@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/baagee/dmq/common"
-	"log"
 	"net/http"
 	"time"
 )
@@ -95,7 +94,7 @@ func save(singleList batchRequest) []bool {
 		}
 		err := msg.Save()
 		if err != nil {
-			log.Printf("消息%+v保存失败：%s\n", msg, err.Error())
+			common.RecordError(err)
 			ret[i] = false
 		} else {
 			ret[i] = true
@@ -159,15 +158,13 @@ func responseWithError(writer http.ResponseWriter, err error) {
 		Message: err.Error(),
 		Data:    nil,
 	}
-
+	common.RecordError(err)
 	switch e := err.(type) {
 	case common.Notice:
 		//自定义的Error类型
-		log.Printf("notice error :[%d] %s\n", e.Code(), e.Error())
 		resp.Code = uint(e.Code())
 		responseWithJson(writer, resp)
 	default:
-		log.Printf("error : %s\n", e.Error())
 		resp.Code = common.ErrorCodeDefault
 		responseWithJson(writer, resp)
 	}
@@ -179,6 +176,6 @@ func responseWithJson(writer http.ResponseWriter, respBody responseBody) {
 	writer.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_, err := writer.Write(resp)
 	if err != nil {
-		log.Println("response error: " + err.Error())
+		common.RecordError(err)
 	}
 }

@@ -7,7 +7,6 @@ import (
 	ut "github.com/go-playground/universal-translator"
 	validator9 "gopkg.in/go-playground/validator.v9"
 	zhTranslations "gopkg.in/go-playground/validator.v9/translations/zh"
-	"log"
 )
 
 // 验证参数
@@ -22,7 +21,7 @@ func validateSingleRequest(single singleRequest) error {
 	if err := validator.Struct(single); err != nil {
 		for _, itemErr := range err.(validator9.ValidationErrors) {
 			if errt != nil {
-				log.Println("RegisterDefaultTranslations " + errt.Error())
+				common.RecordError(err)
 				return common.ThrowNotice(common.ErrorCodeValidateFailed, err)
 			} else {
 				return common.ThrowNotice(common.ErrorCodeValidateFailed, errors.New(itemErr.Translate(trans)))

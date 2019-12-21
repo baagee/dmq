@@ -8,6 +8,9 @@ const (
 	ErrorCodeUnknowCommand     = 140
 	ErrorCodeJsonMarshal       = 150
 	ErrorCodeRedisSave         = 160
+	ErrorCodeNotFoundPoint     = 170
+	ErrorCodeFoundPointFailed  = 180
+	ErrorCodeRemovePointFailed = 190
 )
 
 type ThrowAble interface {
