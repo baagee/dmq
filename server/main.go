@@ -19,11 +19,12 @@ func main() {
 	go app.GetPointBuckets()
 
 	// 多协程获取时间点的bucket的消息详情
-	for i := 0; i <= 100; i++ {
+	var i, j uint
+	for i = 0; i < common.Config.BucketCoroutineCount; i++ {
 		go app.GetBucketMessages()
 	}
 	// 多协程执行命令
-	for j := 0; j < 1000; j++ {
+	for j = 0; j < common.Config.MsgCoroutineCount; j++ {
 		go app.DoMessageCmd()
 	}
 	//处理point
