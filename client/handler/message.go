@@ -73,10 +73,10 @@ func BatchMessage(writer http.ResponseWriter, request *http.Request) {
 }
 
 //保存命令
-func save(singleList batchRequest) []bool {
+func save(singleList batchRequest) []interface{} {
 	length := len(singleList)
 	// 切片需要make
-	ret := make([]bool, length)
+	ret := make([]interface{}, length)
 	ids := common.GenerateIds(int64(length))
 	for i, single := range singleList {
 		if single.Timestamp == 0 {
@@ -95,9 +95,9 @@ func save(singleList batchRequest) []bool {
 		err := msg.Save()
 		if err != nil {
 			common.RecordError(err)
-			ret[i] = false
+			ret[i] = false //失败返回false
 		} else {
-			ret[i] = true
+			ret[i] = msg.Id //成功返回消息ID
 		}
 	}
 	//返回每个是成功还是失败
