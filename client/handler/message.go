@@ -126,13 +126,14 @@ func checkParams(singleList batchRequest, fromIp string) error {
 
 //检查cmd和project是否匹配并且已经提前定义过
 func checkCommand(request singleRequest) error {
-	for _, itemCmd := range common.Config.CommandList {
-		if itemCmd.Project == request.Project && itemCmd.Command == request.Cmd {
-			//找到规定的命令了
-			return nil
-		}
+	cmd, exists := common.Config.CommandMap[common.GetConfigCmdKey(request.Cmd)]
+	if exists == false {
+		return common.ThrowNotice(common.ErrorCodeUnknowCommand, errors.New("存在未知的cmd"))
 	}
-	return common.ThrowNotice(common.ErrorCodeUnknowCommand, errors.New("存在未知的cmd"))
+	if cmd.Project != request.Project {
+		return common.ThrowNotice(common.ErrorCodeUnknowCommand, errors.New("不匹配的cmd和project"))
+	}
+	return nil
 }
 
 // 验证来源

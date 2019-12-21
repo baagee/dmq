@@ -18,7 +18,7 @@ type baseConfig struct {
 	HttpPort        uint            `yaml:"http_port"`
 	ProductList     []productConfig `yaml:"product_list"`
 	Redis           redisConfig     `yaml:"redis"`
-	CommandList     []commandConfig
+	CommandMap      map[string]commandConfig
 	CommandFileList []string `yaml:"command_list"`
 }
 
@@ -86,18 +86,19 @@ func init() {
 	}
 	var (
 		cmdConfigFile string
-		commandConfig commandConfig
+		commandConf   commandConfig
 	)
+	Config.CommandMap = make(map[string]commandConfig, len(Config.CommandFileList))
 	for _, cFile := range Config.CommandFileList {
 		cmdConfigFile = configPath + "/" + cFile
 		if FileExists(cmdConfigFile) == false {
 			ExitWithNotice(ThrowNotice(1, errors.New(fmt.Sprintf("%s 文件不存在", cFile))))
 		}
-		err := GetYamlConfig(cmdConfigFile, &commandConfig)
+		err := GetYamlConfig(cmdConfigFile, &commandConf)
 		if err != nil {
 			ExitWithNotice(ThrowNotice(1, err))
 		}
-		Config.CommandList = append(Config.CommandList, commandConfig)
+		Config.CommandMap[GetConfigCmdKey(commandConf.Command)] = commandConf
 	}
 	log.Println("config init success")
 }

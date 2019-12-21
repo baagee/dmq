@@ -101,3 +101,19 @@ func GetBucketName(bucket string, pointName string) string {
 func GetMessageListName(bucketName string) string {
 	return fmt.Sprintf("%s:messages", bucketName)
 }
+
+//	获取消息状态的hash key 小时区分
+func GetMessageStatusHashName(timestamp uint64, project string) string {
+	hour := time.Unix(int64(timestamp), 0).Format("2006-01-02-15")
+	return fmt.Sprintf("%s:%s:%s:message:status", RedisKeyPrefix, project, hour)
+}
+
+//	获取消息状态的hash field key
+func GetMessageStatusHashField(id uint64, host string, path string) string {
+	return fmt.Sprintf("%s:%d:%s%s", RedisKeyPrefix, id, host, path)
+}
+
+//获取配置信息的mcd map key
+func GetConfigCmdKey(cmd string) string {
+	return fmt.Sprintf("cmd-%s", strings.Replace(cmd, ":", "-", -1))
+}
