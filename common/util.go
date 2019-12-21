@@ -150,8 +150,8 @@ func HttpPost(url string, params string, timeout uint) error {
 	}
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
-	log.Println("response Body:", string(body))
+	//body, _ := ioutil.ReadAll(resp.Body)
+	//log.Println("response Body:", string(body))
 	if resp.StatusCode != 200 {
 		return ThrowNotice(ErrorCodeResponseCodeNot200, errors.New("response code!=200"))
 	}

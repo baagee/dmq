@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/go-redis/redis"
+	"log"
 )
 
 const (
@@ -130,6 +131,11 @@ func (m *Message) GetBucketMessages(bucket string) []string {
 func (m *Message) SetMessageStatus(host string, path string, status int) {
 	field := GetMessageStatusHashField(m.Id, host, path)
 	messageStatusHashKey := GetMessageStatusHashName(m.Timestamp, m.Project)
+	if status == MessageStatusFailed {
+		log.Println(field + " failed")
+	} else if status == MessageStatusDone {
+		log.Println(field + " success")
+	}
 	_, err := RedisCli.HSet(messageStatusHashKey, field, status).Result()
 	if err != nil {
 		RecordError(err)

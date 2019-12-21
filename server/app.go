@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/baagee/dmq/common"
-	"log"
 	"strings"
 	"time"
 )
@@ -118,7 +117,7 @@ func (app *App) DoMessageCmd() {
 func requestConsumer(consumer common.ConsumerConfig, msg *common.Message) {
 	// 状态设置组成正在做
 	msg.SetMessageStatus(consumer.Host, consumer.Path, common.MessageStatusDoing)
-	log.Printf("%s%s %d 消费 %d %s\n", consumer.Host, consumer.Path, time.Now().Unix(), msg.Timestamp, msg.Cmd)
+	//log.Printf("%s%s %d 消费 %d %s\n", consumer.Host, consumer.Path, time.Now().Unix(), msg.Timestamp, msg.Cmd)
 	url := fmt.Sprintf("%s%s", consumer.Host, consumer.Path)
 	if strings.Index(url, "http") == -1 {
 		//不是http开头的 加上http
@@ -130,7 +129,8 @@ func requestConsumer(consumer common.ConsumerConfig, msg *common.Message) {
 	for t = 0; t <= consumer.RetryTimes; t++ {
 		err := common.HttpPost(url, msg.Params, consumer.Timeout)
 		if err != nil {
-			common.RecordError(errors.New(fmt.Sprintf("retry=%d %s", t, err.Error())))
+			field := common.GetMessageStatusHashField(msg.Id, consumer.Host, consumer.Path)
+			common.RecordError(errors.New(fmt.Sprintf("%s retry=%d %s", field, t, err.Error())))
 			//稍微休息一下
 			time.Sleep(time.Duration(consumer.Interval) * time.Millisecond)
 			continue
