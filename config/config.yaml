@@ -10,6 +10,11 @@ product_list:
     allow_ip:
       - 127.0.0.1
 
+get_point_sleep: 1000 # 获取时间点的休息时间 ms
+msg_point_chan_len: 200 # 时间点通道长度
+msg_bucket_chan_len: 500 # 消息bucket通道长度
+msg_detail_chan_len: 1000 # 消息通道长度
+
 # redis配置
 redis:
   host: 127.0.0.1

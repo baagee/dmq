@@ -15,11 +15,15 @@ var (
 
 //基本配置
 type baseConfig struct {
-	HttpPort        uint            `yaml:"http_port"`
-	ProductList     []productConfig `yaml:"product_list"`
-	Redis           redisConfig     `yaml:"redis"`
-	CommandMap      map[string]commandConfig
-	CommandFileList []string `yaml:"command_list"`
+	HttpPort         uint            `yaml:"http_port"`
+	ProductList      []productConfig `yaml:"product_list"`
+	GetPointSleep    uint            `yaml:"get_point_sleep"`
+	MsgPointChanLen  uint            `yaml:"msg_point_chan_len"`
+	MsgBucketChanLen uint            `yaml:"msg_bucket_chan_len"`
+	MsgDetailChanLen uint            `yaml:"msg_detail_chan_len"`
+	Redis            redisConfig     `yaml:"redis"`
+	CommandMap       map[string]commandConfig
+	CommandFileList  []string `yaml:"command_list"`
 }
 
 //redis配置信息

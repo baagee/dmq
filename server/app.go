@@ -43,6 +43,6 @@ func (app *App) GetPointFromRedis() {
 			// 放入pointChan
 			app.msgPointChan <- point
 		}
-		time.Sleep(time.Millisecond * 1000)
+		time.Sleep(time.Millisecond * time.Duration(common.Config.GetPointSleep))
 	}
 }
