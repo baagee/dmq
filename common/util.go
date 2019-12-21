@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -156,4 +157,30 @@ func HttpPost(url string, params string, timeout uint) error {
 		return ThrowNotice(ErrorCodeResponseCodeNot200, errors.New("response code!=200"))
 	}
 	return nil
+}
+
+// 获取消费者下游接口
+func GetConsumerFullUrl(host string, path string, msgId uint64) string {
+	urlStr := fmt.Sprintf("%s%s", host, path)
+	if strings.Index(urlStr, "http") == -1 {
+		//不是http开头的 加上http
+		urlStr = fmt.Sprintf("http://%s", urlStr)
+	}
+	// 判断是否已经有参数了
+	var rawQuery bool
+	u, err := url.Parse(urlStr)
+	// 加上消息ID
+	if err != nil {
+		RecordError(err)
+		rawQuery = strings.Index(urlStr, "?") != -1
+	} else {
+		rawQuery = u.RawQuery != ""
+	}
+	if rawQuery {
+		// 原来有参数
+		urlStr += fmt.Sprintf("&msg_id=%d", msgId)
+	} else {
+		urlStr += fmt.Sprintf("?msg_id=%d", msgId)
+	}
+	return urlStr
 }
