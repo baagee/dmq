@@ -9,4 +9,4 @@ consumer_list:
     path: "/api/mytest/test/noticeuser"
     timeout: 600 #ms
     retry_times: 3 # 重试次数
-    interval: 300 #ms
+    interval: 300 # 重试时间间隔 ms

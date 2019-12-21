@@ -1,16 +1,16 @@
 # http端口号
 http_port: 8989
-# 允许的项目名字
+# 允许的生产者列表
 product_list:
   - project: svs
-    allow_ip:
+    allow_ip: # 消息来源ip限制
       - 127.0.0.1
 
   - project: sds
     allow_ip:
       - 127.0.0.1
 
-get_point_sleep: 500 # 获取时间点的休息时间 ms
+get_point_sleep: 500 # 获取时间点后休息的时间 ms
 msg_point_chan_len: 200 # 时间点通道长度
 msg_bucket_chan_len: 500 # 消息bucket通道长度
 msg_detail_chan_len: 1000 # 消息通道长度
