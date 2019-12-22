@@ -32,11 +32,11 @@ func FileExists(filePath string) bool {
 
 // 获取配置信息
 func GetYamlConfig(configFile string, mc interface{}) error {
-	bytes, err := ioutil.ReadFile(configFile)
+	byt, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		return err
 	} else {
-		err := yaml.Unmarshal(bytes, mc)
+		err := yaml.Unmarshal(byt, mc)
 		if err != nil {
 			return err
 		} else {
