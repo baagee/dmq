@@ -105,7 +105,7 @@ func save(singleList batchRequest) []interface{} {
 				// nothing
 			}*/
 		} else {
-			msg.Id = mId //返回已存在的消息ID
+			//msg.Id = mId //返回已存在的消息ID
 		}
 		ret[i] = msg.Id //返回消息ID
 	}

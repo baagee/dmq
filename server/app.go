@@ -130,7 +130,7 @@ func requestConsumer(consumer common.ConsumerConfig, msg *common.Message) {
 		curUrl := url + "&retry=" + strconv.FormatUint(uint64(retry), 10)
 		err := common.HttpPost(curUrl, msg.Params, consumer.Timeout)
 		if err != nil {
-			field := common.GetMessageStatusHashField(msg.Id, consumer.Host, consumer.Path)
+			field := common.GetMessageStatusHashField(consumer.Host, consumer.Path)
 			common.RecordError(errors.New(fmt.Sprintf("%s retry=%d %s", field, retry, err.Error())))
 			//稍微休息一下
 			if retry < consumer.RetryTimes {

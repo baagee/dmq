@@ -10,7 +10,10 @@ product_list:
     allow_ip:
       - 127.0.0.1
 
-msg_no_repeat_day: 4 # 整数 day 完全相同的消息 从发消息时刻到消息执行时刻后几天内不允许重复
+# 整数 day 完全相同的消息 从发消息时刻到消息执行时刻后几天内不允许重复
+# 同时也是消息在redis的保存时间 过期后清理
+# 消息的消费结果保存 2 * msg_no_repeat_day时间
+msg_no_repeat_day: 4
 
 get_point_sleep: 500 # 获取时间点后休息的时间 ms
 msg_point_chan_len: 200 # 时间点通道长度

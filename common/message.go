@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/go-redis/redis"
 	"log"
-	"strconv"
 	"time"
 )
 
@@ -41,7 +40,8 @@ func (m *Message) Save() error {
 		// 每个消息针对每个消费者的状态
 		messageStatusMap := make(map[string]interface{}, len(cm.ConsumerList))
 		for _, consumer := range cm.ConsumerList {
-			messageStatusMap[GetMessageStatusHashField(m.Id, consumer.Host, consumer.Path)] = MessageStatusDefault
+			// ID=>status 消息状态 hash=msgId:status field=consumer value=status
+			messageStatusMap[GetMessageStatusHashField(consumer.Host, consumer.Path)] = MessageStatusDefault
 		}
 		// 消息标记过期时间 从现在到消息的执行时间后n天 这段时间不允许重复
 		expireTime := time.Duration(m.Timestamp+3600*24*uint64(Config.MsgNoRepeatDay)-uint64(time.Now().Unix())) * time.Second
@@ -54,17 +54,32 @@ func (m *Message) Save() error {
 			Score:  float64(m.Timestamp),
 			Member: pointName,
 		})
+
 		// 2 增加时间点的bucket
 		bucketName := GetBucketName(m.Bucket, pointName)
 		redisTx.SAdd(pointName, bucketName)
+
 		// 3 将任务放入当前时刻当前bucket的任务列表
 		messageListName := GetMessageListName(bucketName)
 		redisTx.LPush(messageListName, string(bytes))
+
 		//4 将任务状态保存
-		messageStatusHashKey := GetMessageStatusHashName(m.Timestamp, m.Project)
+		messageStatusHashKey := GetMessageStatusHashName(m.Id)
 		redisTx.HMSet(messageStatusHashKey, messageStatusMap)
-		// 5 增加消息标记 便于去重
-		redisTx.Set(GetMsgRedisFlagKey(m.hash), m.Id, expireTime)
+		// 设置过期时间 2*expireTime
+		redisTx.Expire(messageStatusHashKey, 2*expireTime)
+
+		// 5 增加 project Y-m-d-H 按天纬度记录ID和hash 过期时间 expireTime
+		//			id=>hash的关系 后面可以根据hash获取消息详情
+		id2hashDayKey := GetProjectDayHashKey(m.Project, m.Timestamp)
+		id2hashIdFieldKey := GetMessageId2HashFieldKey(m.Id)
+		redisTx.HSet(id2hashDayKey, id2hashIdFieldKey, m.hash)
+		redisTx.Expire(id2hashDayKey, expireTime) //和下面的详情保持一样的过期时间
+
+		// 6 增加消息标记 便于去重 通过hash可以查看m详情 hash=>m
+		// 保存消息全部信息 key=hash value=json_encode(m)
+		redisTx.Set(GetMsgRedisFlagKey(m.hash), string(bytes), expireTime) //expireTime
+
 		//提交
 		_, err = redisTx.Exec()
 		if err != nil {
@@ -81,14 +96,19 @@ func (m *Message) CheckExists() uint64 {
 	m.hash = StringHash(fmt.Sprintf("%s:%d:%s:%s:%s", m.Cmd, m.Timestamp, m.Params, m.Project, m.Bucket))
 	ret, err := RedisCli.Get(GetMsgRedisFlagKey(m.hash)).Result()
 	if err != nil {
+		if err != redis.Nil {
+			RecordError(err)
+		}
 		// 不存在
 		return 0
 	}
-	beforeId, err := strconv.Atoi(ret)
+
+	err = json.Unmarshal([]byte(ret), m)
 	if err != nil {
+		RecordError(err)
 		return 0
 	}
-	return uint64(beforeId)
+	return m.Id
 }
 
 //获取最近的时间点
@@ -148,13 +168,14 @@ func (m *Message) GetBucketMessages(bucket string) []string {
 	return detailList
 }
 
+//设置消息消费状态
 func (m *Message) SetMessageStatus(host string, path string, status int) {
-	field := GetMessageStatusHashField(m.Id, host, path)
-	messageStatusHashKey := GetMessageStatusHashName(m.Timestamp, m.Project)
+	field := GetMessageStatusHashField(host, path)
+	messageStatusHashKey := GetMessageStatusHashName(m.Id)
 	if status == MessageStatusFailed {
-		log.Println(field + " failed")
+		log.Printf("message: %d %s failed", m.Id, field)
 	} else if status == MessageStatusDone {
-		log.Println(field + " success")
+		log.Printf("message: %d %s success", m.Id, field)
 	}
 	_, err := RedisCli.HSet(messageStatusHashKey, field, status).Result()
 	if err != nil {
