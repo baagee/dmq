@@ -23,6 +23,8 @@ msg_detail_chan_len: 1000 # 消息通道长度
 bucket_coroutine_count: 500 # 处理bucket的协程数
 msg_coroutine_count: 1000 # 执行message的协程数
 
+disable_success_log: 1 # 是否禁止输出消息消费成功的log
+
 # redis配置
 redis:
   host: 127.0.0.1

@@ -24,6 +24,7 @@ type baseConfig struct {
 	MsgDetailChanLen     uint            `yaml:"msg_detail_chan_len"`
 	BucketCoroutineCount uint            `yaml:"bucket_coroutine_count"`
 	MsgCoroutineCount    uint            `yaml:"msg_coroutine_count"`
+	DisableSuccessLog    uint            `yaml:"disable_success_log"`
 	Redis                redisConfig     `yaml:"redis"`
 	CommandMap           map[string]commandConfig
 	CommandFileList      []string `yaml:"command_list"`

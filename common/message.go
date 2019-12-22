@@ -184,7 +184,10 @@ func (m *Message) SetMessageStatus(host string, path string, status int) {
 	if status == MessageStatusFailed {
 		log.Printf("message: %d %s failed", m.Id, field)
 	} else if status == MessageStatusDone {
-		log.Printf("message: %d %s success", m.Id, field)
+		if Config.DisableSuccessLog == 0 {
+			// 不输出消费成功的log
+			log.Printf("message: %d %s success", m.Id, field)
+		}
 	}
 	_, err := RedisCli.HSet(messageStatusHashKey, field, status).Result()
 	if err != nil {
