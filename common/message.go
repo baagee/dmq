@@ -91,6 +91,15 @@ func (m *Message) Save() error {
 	return nil
 }
 
+//获取消息消费状态
+func (m *Message) Status() (map[string]string, error) {
+	consumerStatus, err := RedisCli.HGetAll(GetMessageStatusHashName(m.Id)).Result()
+	if err != nil {
+		return map[string]string{}, err
+	}
+	return consumerStatus, nil
+}
+
 //检查消息是否存在 存在就返回已存在的消息ID
 func (m *Message) CheckExists() uint64 {
 	m.hash = StringHash(fmt.Sprintf("%s:%d:%s:%s:%s", m.Cmd, m.Timestamp, m.Params, m.Project, m.Bucket))

@@ -25,6 +25,7 @@ func (app *App) Init() *App {
 func (app *App) BindRouter() *App {
 	http.Handle("/api/message/single", app.alice.ThenFunc(handler.SingleMessage))
 	http.Handle("/api/message/batch", app.alice.ThenFunc(handler.BatchMessage))
+	http.Handle("/api/message/status", app.alice.ThenFunc(handler.MessageStatus))
 	return app
 }
 

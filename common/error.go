@@ -15,6 +15,7 @@ const (
 	ErrorCodeResponseCodeNot200  = 201
 	ErrorCodePreRequestFailed    = 202
 	ErrorCodeRequestFailed       = 203
+	ErrorCodeGetStatusFailed     = 204
 )
 
 type ThrowAble interface {
