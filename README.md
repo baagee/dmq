@@ -11,7 +11,7 @@ request:
 {
   "project":"sds", // 所属项目
   "cmd":"sds:create:order",// 消息执行的命令
-  "timestamp":0,// 执行的时间 为0立即执行
+  "timestamp":0,// 执行的时间点 时间戳 为0立即执行
   "params":"{\"order_id\":34256}",// 消息参数
   "bucket":"order:342543"// 命令bucket
 }
@@ -32,7 +32,7 @@ request:
   {
     "project":"sds", // 所属项目
     "cmd":"sds:create:order",// 消息执行的命令
-    "timestamp":0,// 执行的时间 为0立即执行
+    "timestamp":0,// 执行的时间点 时间戳 为0立即执行
     "params":"{\"order_id\":34256}",// 消息参数
     "bucket":"order:342543"// 命令bucket
   },
