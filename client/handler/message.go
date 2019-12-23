@@ -99,7 +99,7 @@ func BatchMessage(writer http.ResponseWriter, request *http.Request) {
 	responseWithJson(writer, respBody)
 }
 
-//保存命令
+//保存命令 TODO 优化
 func save(singleList batchRequest) []interface{} {
 	length := len(singleList)
 	// 切片需要make
