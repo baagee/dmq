@@ -1,21 +1,21 @@
 package common
 
 const (
-	ErrorCodeDefault             = 100
-	ErrorCodeParseParamsFailed   = 110
-	ErrorCodeValidateFailed      = 120
-	ErrorCodeUnknowProduct       = 130
-	ErrorCodeUnknowCommand       = 140
-	ErrorCodeJsonMarshal         = 150
-	ErrorCodeRedisSave           = 160
-	ErrorCodeFoundBucketsFailed  = 170
-	ErrorCodeFoundPointFailed    = 180
-	ErrorCodeRemovePointFailed   = 190
-	ErrorCodeRemoveBucketsFailed = 200
-	ErrorCodeResponseCodeNot200  = 201
-	ErrorCodePreRequestFailed    = 202
-	ErrorCodeRequestFailed       = 203
-	ErrorCodeGetStatusFailed     = 204
+	ErrorCodeDefault           = 100
+	ErrorCodeParseParamsFailed = ErrorCodeDefault + iota
+	ErrorCodeValidateFailed
+	ErrorCodeUnknowProduct
+	ErrorCodeUnknowCommand
+	ErrorCodeJsonMarshal
+	ErrorCodeRedisSave
+	ErrorCodeFoundBucketsFailed
+	ErrorCodeFoundPointFailed
+	ErrorCodeRemovePointFailed
+	ErrorCodeRemoveBucketsFailed
+	ErrorCodeResponseCodeNot200
+	ErrorCodePreRequestFailed
+	ErrorCodeRequestFailed
+	ErrorCodeGetStatusFailed
 )
 
 type ThrowAble interface {
