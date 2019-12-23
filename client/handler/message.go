@@ -66,15 +66,10 @@ func SingleMessage(writer http.ResponseWriter, request *http.Request) {
 
 	var singleList batchRequest
 	singleList = append(singleList, single)
-	// 验证参数
-	if err := checkParams(singleList, common.GetClientIP(request)); err != nil {
-		responseWithError(writer, err)
-		return
-	}
 
 	//保存
 	var respBody responseBody
-	respBody.Data = save(singleList)[0]
+	respBody.Data = save(singleList, common.GetClientIP(request))[0]
 	responseWithJson(writer, respBody)
 }
 
@@ -87,31 +82,32 @@ func BatchMessage(writer http.ResponseWriter, request *http.Request) {
 		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("不是合法的json")))
 		return
 	}
-	// 验证参数
-	if err := checkParams(singleList, common.GetClientIP(request)); err != nil {
-		responseWithError(writer, err)
-		return
-	}
 
 	//保存
 	var respBody responseBody
-	respBody.Data = save(singleList)
+	respBody.Data = save(singleList, common.GetClientIP(request))
 	responseWithJson(writer, respBody)
 }
 
-//保存命令 TODO 优化
-func save(singleList batchRequest) []interface{} {
+//保存命令
+func save(singleList batchRequest, fromIp string) []interface{} {
 	length := len(singleList)
 	// 切片需要make
 	ret := make([]interface{}, length)
-	ids := common.GenerateIds(int64(length))
+	idBaseNumber := common.GetIdBaseNumber(int64(length))
 	for i, single := range singleList {
+		// 	验证参数
+		err := checkParams(single, fromIp)
+		if err != nil {
+			//参数验证失败 返回 错误信息
+			ret[i] = err.Error()
+			continue
+		}
 		if single.Timestamp == 0 {
 			// 时间为0 表示当前时间 立即执行
 			single.Timestamp = uint64(time.Now().Unix())
 		}
 		msg := common.Message{
-			Id:         ids[i],
 			Cmd:        single.Cmd,
 			Timestamp:  single.Timestamp,
 			Params:     single.Params,
@@ -122,11 +118,12 @@ func save(singleList batchRequest) []interface{} {
 		// 验证消息是否重复
 		// 获取消息hash 查询redis判断是否存在
 		if mId := msg.CheckExists(); mId == 0 {
-			// 不存在 就保存
+			// 不存在 就保存 获取msgId
+			msg.Id = common.GenerateId(int64(i), idBaseNumber, int64(length))
 			err := msg.Save()
 			if err != nil {
 				common.RecordError(err)
-				ret[i] = false //失败返回false
+				ret[i] = false //消息保存失败 返回false
 				continue
 			} /*else{
 				// nothing
@@ -134,27 +131,25 @@ func save(singleList batchRequest) []interface{} {
 		} else {
 			//msg.Id = mId //返回已存在的消息ID
 		}
-		ret[i] = msg.Id //返回消息ID
+		ret[i] = msg.Id //消息保存成功 返回消息ID
 	}
 	//返回每个是成功还是失败
 	return ret
 }
 
 // 对参数做各种验证
-func checkParams(singleList batchRequest, fromIp string) error {
-	for _, single := range singleList {
-		//验证参数
-		if err := validateSingleRequest(single); err != nil {
-			return err
-		}
-		//验证来源
-		if err := checkProduct(single, fromIp); err != nil {
-			return err
-		}
-		//验证cmd
-		if err := checkCommand(single); err != nil {
-			return err
-		}
+func checkParams(single singleRequest, fromIp string) error {
+	//验证参数
+	if err := validateSingleRequest(single); err != nil {
+		return err
+	}
+	//验证来源
+	if err := checkProduct(single, fromIp); err != nil {
+		return err
+	}
+	//验证cmd
+	if err := checkCommand(single); err != nil {
+		return err
 	}
 	return nil
 }

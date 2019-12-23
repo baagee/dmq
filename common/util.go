@@ -68,22 +68,21 @@ func GetClientIP(r *http.Request) string {
 	return ""
 }
 
-// 基于redis生成数字ID
-func GenerateIds(count int64) []uint64 {
-	var ids []uint64
+//获取生成ID的基数
+func GetIdBaseNumber(count int64) int64 {
 	number, err := RedisCli.IncrBy(fmt.Sprintf("%s:%s", RedisKeyPrefix, IdIncrKey), count).Result()
 	if err != nil {
 		RecordError(err)
 		//降级 使用时间戳
 		number = time.Now().Unix()
 	}
+	return number
+}
 
-	var i, id int64
-	for i = 0; i < count; i++ {
-		id = time.Now().Unix()*10000 + (number-count+i+1)*10000 + rand.Int63n(10000)
-		ids = append(ids, uint64(id))
-	}
-	return ids
+// 生成ID
+func GenerateId(i int64, number int64, count int64) uint64 {
+	id := time.Now().Unix()*10000 + (number-count+i+1)*10000 + rand.Int63n(10000)
+	return uint64(id)
 }
 
 //获取时间点分组的key 按照项目分组
