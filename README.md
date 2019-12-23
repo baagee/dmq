@@ -70,7 +70,7 @@ response:
   "code": 0,
   "message": "",
   "data": {
-    "dmq:consumer:10.188.60.200:8959/api/mytest/test/noticeuser": "3" // 消费者和对应的消费状态 1 未消费，2 正在消费，3 消费成功，4 消费失败
+    "dmq:consumer:10.190.40.90:8959/api/mytest/test/noticeuser": "3" // 消费者和对应的消费状态 1 未消费，2 正在消费，3 消费成功，4 消费失败
   }
 }
 ```
