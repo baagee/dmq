@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/baagee/dmq/common"
+	"log"
 	"strconv"
 	"time"
 )
@@ -54,6 +55,12 @@ func (app *App) GetPointFromRedis() {
 
 // 获取buckets
 func (app *App) GetPointBuckets() {
+	//通过recover保证一个协程失败 不影响其他协程
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Error: %+v", r)
+		}
+	}()
 	for {
 		point := <-app.msgPointChan
 		if point == "" {
@@ -78,6 +85,12 @@ func (app *App) GetPointBuckets() {
 
 //获取bucket对应的消息
 func (app *App) GetBucketMessages() {
+	//通过recover保证一个协程失败 不影响其他协程
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Error: %+v", r)
+		}
+	}()
 	for {
 		bucket := <-app.msgBucketChan
 		if bucket == "" {
@@ -101,20 +114,32 @@ func (app *App) GetBucketMessages() {
 
 // 执行命令
 func (app *App) DoMessageCmd() {
+	//通过recover保证一个协程失败 不影响其他协程
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Error: %+v", r)
+		}
+	}()
 	for {
 		msg := <-app.msgDetailChan
 		consumerList := common.Config.CommandMap[common.GetConfigCmdKey(msg.Cmd)].ConsumerList
 		//log.Println(consumerList)
 		for _, consumer := range consumerList {
 			// 一个协程处理一个消费者
-			//requestConsumer(consumer, &msg)
-			go requestConsumer(consumer, &msg)
+			go app.requestConsumer(consumer, &msg)
 		}
 	}
 }
 
 // 请求消费者
-func requestConsumer(consumer common.ConsumerConfig, msg *common.Message) {
+func (app *App) requestConsumer(consumer common.ConsumerConfig, msg *common.Message) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Error: %+v", r)
+			// 消息重新进入通道去消费
+			app.msgDetailChan <- *msg
+		}
+	}()
 	// 状态设置组成正在做
 	msg.SetMessageStatus(consumer.Host, consumer.Path, common.MessageStatusDoing)
 	url := common.GetConsumerFullUrl(consumer.Host, consumer.Path, msg.Id)
