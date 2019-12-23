@@ -6,9 +6,6 @@ import (
 )
 
 func main() {
-	//bb, _ := json.Marshal(common.Config)
-	//log.Println(string(bb))
-
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 	app := App{
 		msgDetailChan: make(chan common.Message, common.Config.MsgDetailChanLen),
