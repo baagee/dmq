@@ -125,11 +125,7 @@ func save(singleList batchRequest, fromIp string) []interface{} {
 				common.RecordError(err)
 				ret[i] = false //消息保存失败 返回false
 				continue
-			} /*else{
-				// nothing
-			}*/
-		} else {
-			//msg.Id = mId //返回已存在的消息ID
+			}
 		}
 		ret[i] = msg.Id //消息保存成功 返回消息ID
 	}
