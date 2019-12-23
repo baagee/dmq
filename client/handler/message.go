@@ -18,13 +18,6 @@ type singleRequest struct {
 	Bucket    string `json:"bucket" validate:"required"`  // 消息桶
 }
 
-//响应结构体
-type responseBody struct {
-	Code    uint        `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
-}
-
 //批量请求结构体
 type batchRequest []singleRequest
 
@@ -136,7 +129,7 @@ func save(singleList batchRequest, fromIp string) []interface{} {
 // 对参数做各种验证
 func checkParams(single singleRequest, fromIp string) error {
 	//验证参数
-	if err := validateSingleRequest(single); err != nil {
+	if err := validateSingleMessageRequest(single); err != nil {
 		return err
 	}
 	//验证来源
@@ -176,33 +169,4 @@ func checkProduct(request singleRequest, ip string) error {
 		}
 	}
 	return common.ThrowNotice(common.ErrorCodeUnknowProduct, errors.New("不合法的消息来源"))
-}
-
-//输出错误信息
-func responseWithError(writer http.ResponseWriter, err error) {
-	resp := responseBody{
-		Code:    0,
-		Message: err.Error(),
-		Data:    nil,
-	}
-	common.RecordError(err)
-	switch e := err.(type) {
-	case common.Notice:
-		//自定义的Error类型
-		resp.Code = uint(e.Code())
-		responseWithJson(writer, resp)
-	default:
-		resp.Code = common.ErrorCodeDefault
-		responseWithJson(writer, resp)
-	}
-}
-
-//输出json
-func responseWithJson(writer http.ResponseWriter, respBody responseBody) {
-	resp, _ := json.Marshal(respBody)
-	writer.Header().Set("Content-Type", "application/json; charset=utf-8")
-	_, err := writer.Write(resp)
-	if err != nil {
-		common.RecordError(err)
-	}
 }

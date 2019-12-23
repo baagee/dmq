@@ -157,6 +157,7 @@ func HttpPost(url string, params string, timeout uint) error {
 		return ThrowNotice(ErrorCodePreRequestFailed, err)
 	}
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	req.Header.Set("User-Agent", "dmq(message queue)")
 	client := &http.Client{
 		Timeout: time.Duration(timeout) * time.Millisecond,
 	}

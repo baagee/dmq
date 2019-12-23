@@ -9,8 +9,8 @@ import (
 	zhTranslations "gopkg.in/go-playground/validator.v9/translations/zh"
 )
 
-// 验证参数
-func validateSingleRequest(single singleRequest) error {
+// 验证提交消息的参数
+func validateSingleMessageRequest(singleMessage singleRequest) error {
 	//中文翻译器
 	zhCh := zh.New()
 	uni := ut.New(zhCh)
@@ -18,7 +18,7 @@ func validateSingleRequest(single singleRequest) error {
 	validator := validator9.New()
 	//注册中文翻译
 	errt := zhTranslations.RegisterDefaultTranslations(validator, trans)
-	if err := validator.Struct(single); err != nil {
+	if err := validator.Struct(singleMessage); err != nil {
 		for _, itemErr := range err.(validator9.ValidationErrors) {
 			if errt != nil {
 				common.RecordError(err)
