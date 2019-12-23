@@ -42,5 +42,5 @@ redis:
 
 # 命令列表
 command_list:
-  - cmd-sds-create-order.yaml # 另一个配置文件的路径
+  - cmd-sds-create-order.yaml # 另一个配置文件的路径 相对当前文件的路径
   - cmd-svs-notice-user.yaml
