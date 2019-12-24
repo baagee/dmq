@@ -14,6 +14,7 @@ type singleRequest struct {
 	Cmd       string `json:"cmd" validate:"required"`     // 命令点
 	Timestamp uint64 `json:"timestamp"`                   // 执行时间
 	Params    string `json:"params"`                      // 命令参数
+	RequestId string `json:"request_id"`                  // 请求ID
 	Project   string `json:"project" validate:"required"` // 项目
 	Bucket    string `json:"bucket" validate:"required"`  // 消息桶
 }
@@ -106,6 +107,7 @@ func save(singleList batchRequest, fromIp string) []interface{} {
 			Params:     single.Params,
 			Project:    single.Project,
 			Bucket:     single.Bucket,
+			RequestId:  single.RequestId,
 			CreateTime: uint64(time.Now().Unix()),
 		}
 		// 验证消息是否重复

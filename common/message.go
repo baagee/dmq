@@ -24,6 +24,7 @@ type Message struct {
 	Project    string `json:"project"`     // 项目
 	Bucket     string `json:"bucket"`      // 消息桶
 	CreateTime uint64 `json:"create_time"` // 创建时间
+	RequestId  string `json:"request_id"`  // 请求ID
 	hash       string // 消息体唯一标示 下游获取不到 因为json encode时就没有了
 }
 

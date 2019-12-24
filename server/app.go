@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/baagee/dmq/common"
 	"log"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -34,7 +36,6 @@ func (app *App) GetPointFromRedis() {
 			}
 			point := member.Member.(string)
 			score := int64(member.Score)
-			//log.Println(point, score)
 			if time.Now().Unix() < score {
 				// 还没到点
 				continue
@@ -67,7 +68,6 @@ func (app *App) GetPointBuckets() {
 			continue
 		}
 		var msg common.Message
-		//log.Println("从msgPointChan获取到point: " + point)
 		bucketList, err := msg.GetPointBuckets(point)
 		if err != nil {
 			common.RecordError(err)
@@ -78,7 +78,6 @@ func (app *App) GetPointBuckets() {
 		}
 		for _, bucket := range bucketList {
 			app.msgBucketChan <- bucket
-			//log.Printf("%s 添加到msgBucketChan", bucket)
 		}
 	}
 }
@@ -106,7 +105,6 @@ func (app *App) GetBucketMessages() {
 				common.RecordError(err)
 				continue
 			}
-			//log.Println("将消息放入detail chan " + m.Cmd)
 			app.msgDetailChan <- m
 		}
 	}
@@ -123,16 +121,15 @@ func (app *App) DoMessageCmd() {
 	for {
 		msg := <-app.msgDetailChan
 		consumerList := common.Config.CommandMap[common.GetConfigCmdKey(msg.Cmd)].ConsumerList
-		//log.Println(consumerList)
 		for _, consumer := range consumerList {
 			// 一个协程处理一个消费者
-			go app.requestConsumer(consumer, &msg)
+			go app.consume(consumer, &msg)
 		}
 	}
 }
 
-// 请求消费者
-func (app *App) requestConsumer(consumer common.ConsumerConfig, msg *common.Message) {
+// 消费
+func (app *App) consume(consumer common.ConsumerConfig, msg *common.Message) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("Error: %+v", r)
@@ -153,7 +150,7 @@ func (app *App) requestConsumer(consumer common.ConsumerConfig, msg *common.Mess
 	for ; retry <= consumer.RetryTimes; retry++ {
 		// 加上重试次数
 		curUrl := url + "&retry=" + strconv.FormatUint(uint64(retry), 10)
-		err := common.HttpPost(curUrl, msg.Params, consumer.Timeout)
+		err := app.requestConsumer(msg, curUrl, consumer.Timeout)
 		if err != nil {
 			field := common.GetMessageStatusHashField(consumer.Host, consumer.Path)
 			common.RecordError(errors.New(fmt.Sprintf("%s retry=%d %s", field, retry, err.Error())))
@@ -174,4 +171,30 @@ func (app *App) requestConsumer(consumer common.ConsumerConfig, msg *common.Mess
 		// 失败后改状态为消费失败
 		msg.SetMessageStatus(consumer.Host, consumer.Path, common.MessageStatusFailed)
 	}
+}
+
+//真正的消费
+func (app *App) requestConsumer(msg *common.Message, url string, timeout uint) error {
+	var jsonBytes = []byte(msg.Params)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
+	if err != nil {
+		return common.ThrowNotice(common.ErrorCodePreRequestFailed, err)
+	}
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	req.Header.Set("User-Agent", "dmq(message queue)")
+	if msg.RequestId != "" {
+		req.Header.Set("X-Request-Id", msg.RequestId) //设置消息生产者请求ID 连贯生产者和消费者
+	}
+	client := &http.Client{
+		Timeout: time.Duration(timeout) * time.Millisecond,
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return common.ThrowNotice(common.ErrorCodeRequestFailed, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return common.ThrowNotice(common.ErrorCodeResponseCodeNot200, errors.New("response code!=200"))
+	}
+	return nil
 }
