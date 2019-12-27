@@ -25,6 +25,8 @@ msg_coroutine_count: 1000 # 执行message的协程数
 
 disable_success_log: 1 # 是否禁止输出消息消费成功的log
 
+request_trace_id_key: Request-Id # 请求链路追踪ID的header字段名字
+
 # redis配置
 redis:
   host: 127.0.0.1

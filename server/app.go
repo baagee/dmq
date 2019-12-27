@@ -183,7 +183,7 @@ func (app *App) requestConsumer(msg *common.Message, url string, timeout uint) e
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	req.Header.Set("User-Agent", "dmq(message queue)")
 	if msg.RequestId != "" {
-		req.Header.Set("X-Request-Id", msg.RequestId) //设置消息生产者请求ID 连贯生产者和消费者
+		req.Header.Set("X-"+common.Config.RequestTraceIdKey, msg.RequestId) //设置消息生产者请求ID 连贯生产者和消费者
 	}
 	client := &http.Client{
 		Timeout: time.Duration(timeout) * time.Millisecond,
