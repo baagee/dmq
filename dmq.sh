@@ -70,7 +70,7 @@ restart)
   start $2
   ;;
 *)
-  echo "Usage: $0 start|stop client|server"
+  echo "Usage: $0 start|stop|restart client|server"
   exit 1
   ;;
 esac
