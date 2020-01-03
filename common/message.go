@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"github.com/go-redis/redis"
 	"log"
+	"strconv"
 	"time"
 )
 
 const (
-	MessageStatusDefault = 1 //默认状态
+	MessageStatusWaiting = 1 //默认状态
 	MessageStatusDoing   = 2 //正在消费
 	MessageStatusDone    = 3 //消费完
 	MessageStatusFailed  = 4 //消费失败
@@ -42,7 +43,7 @@ func (m *Message) Save() error {
 		messageStatusMap := make(map[string]interface{}, len(cm.ConsumerList))
 		for _, consumer := range cm.ConsumerList {
 			// ID=>status 消息状态 hash=msgId:status field=consumer value=status
-			messageStatusMap[GetMessageStatusHashField(consumer.Host, consumer.Path)] = MessageStatusDefault
+			messageStatusMap[GetMessageStatusHashField(consumer.Host, consumer.Path)] = MessageStatusWaiting
 		}
 		// 消息标记过期时间 从现在到消息的执行时间后n天 这段时间不允许重复
 		expireTime := time.Duration(m.Timestamp+3600*24*uint64(Config.MsgNoRepeatDay)-uint64(time.Now().Unix())) * time.Second
@@ -98,7 +99,30 @@ func (m *Message) Status() (map[string]string, error) {
 	if err != nil {
 		return map[string]string{}, err
 	}
+	for consumer, status := range consumerStatus {
+		s, err := strconv.Atoi(status)
+		if err != nil {
+			return map[string]string{}, err
+		}
+		consumerStatus[consumer] = switchStatus(s)
+	}
 	return consumerStatus, nil
+}
+
+//消息数字状态转化为字符串描述
+func switchStatus(status int) string {
+	switch status {
+	case MessageStatusWaiting:
+		return "waiting"
+	case MessageStatusDoing:
+		return "doing"
+	case MessageStatusDone:
+		return "done"
+	case MessageStatusFailed:
+		return "failed"
+	default:
+		return "unknow"
+	}
 }
 
 //检查消息是否存在 存在就返回已存在的消息ID
