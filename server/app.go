@@ -188,7 +188,9 @@ func (app *App) requestConsumer(msg *common.Message, url string, timeout uint) e
 	client := &http.Client{
 		Timeout: time.Duration(timeout) * time.Millisecond,
 	}
+	startTime := time.Now()
 	resp, err := client.Do(req)
+
 	if err != nil {
 		return common.ThrowNotice(common.ErrorCodeRequestFailed, err)
 	}
@@ -196,5 +198,6 @@ func (app *App) requestConsumer(msg *common.Message, url string, timeout uint) e
 	if resp.StatusCode != 200 {
 		return common.ThrowNotice(common.ErrorCodeResponseCodeNot200, errors.New("response code!=200"))
 	}
+	log.Printf("request consumer [%s] cost time:%dms\n", url, time.Now().Sub(startTime)/time.Millisecond)
 	return nil
 }
