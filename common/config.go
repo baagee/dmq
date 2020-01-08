@@ -16,7 +16,7 @@ var (
 //基本配置
 type baseConfig struct {
 	HttpPort             uint            `yaml:"http_port"`
-	ProductList          []productConfig `yaml:"product_list"`
+	ProductList          []ProductConfig `yaml:"product_list"`
 	MsgNoRepeatDay       uint            `yaml:"msg_no_repeat_day"`
 	GetPointSleep        uint            `yaml:"get_point_sleep"`
 	MsgPointChanLen      uint            `yaml:"msg_point_chan_len"`
@@ -55,7 +55,7 @@ type commandConfig struct {
 }
 
 // 生产者
-type productConfig struct {
+type ProductConfig struct {
 	Project string   `yaml:"project"`
 	AllowIp []string `yaml:"allow_ip"`
 }

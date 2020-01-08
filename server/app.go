@@ -23,35 +23,40 @@ func (app *App) GetPointFromRedis() {
 	productList := common.Config.ProductList
 	for {
 		for _, product := range productList {
-			msg := common.Message{
-				Project: product.Project,
-			}
-			member, err := msg.GetTimePoint()
-			if err != nil {
-				common.RecordError(err)
-				continue
-			}
-			if member.Member == nil {
-				continue
-			}
-			point := member.Member.(string)
-			score := int64(member.Score)
-			if time.Now().Unix() < score {
-				// 还没到点
-				continue
-			}
-
-			//到点了 可以执行了 先删除
-			err = msg.RemoveTimePoint(point)
-			if err != nil {
-				common.RecordError(err)
-				continue
-			}
-			// 放入pointChan
-			app.msgPointChan <- point
+			go app.getProductPoint(product)
 		}
 		time.Sleep(time.Millisecond * time.Duration(common.Config.GetPointSleep))
 	}
+}
+
+// 获取当前生产者的时间点
+func (app *App) getProductPoint(product common.ProductConfig) {
+	msg := common.Message{
+		Project: product.Project,
+	}
+	member, err := msg.GetTimePoint()
+	if err != nil {
+		common.RecordError(err)
+		return
+	}
+	if member.Member == nil {
+		return
+	}
+	point := member.Member.(string)
+	score := int64(member.Score)
+	if time.Now().Unix() < score {
+		// 还没到点
+		return
+	}
+
+	//到点了 可以执行了 先删除
+	err = msg.RemoveTimePoint(point)
+	if err != nil {
+		common.RecordError(err)
+		return
+	}
+	// 放入pointChan
+	app.msgPointChan <- point
 }
 
 // 获取buckets
