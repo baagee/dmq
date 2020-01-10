@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/baagee/dmq/common"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -123,6 +124,7 @@ func save(singleList batchRequest, fromIp string) []interface{} {
 			}
 		}
 		ret[i] = msg.Id //消息保存成功 返回消息ID
+		log.Printf("message: %+v\n", msg)
 	}
 	//返回每个是成功还是失败
 	return ret
