@@ -39,8 +39,8 @@ func MessageStatus(writer http.ResponseWriter, request *http.Request) {
 		Id: uint64(msgIdInt),
 	}
 
-	ret, err := msg.Status()
-	if err != nil {
+	ret, err1 := msg.Status()
+	if err1 != nil {
 		responseWithError(writer, common.ThrowNotice(common.ErrorCodeGetStatusFailed, err))
 		return
 	}
