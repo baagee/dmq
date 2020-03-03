@@ -1,5 +1,9 @@
 package taskpool
 
+import (
+	"github.com/baagee/dmq/common"
+)
+
 type Pool struct {
 	TaskChannel  chan *Task
 	workerNumber uint
@@ -7,11 +11,12 @@ type Pool struct {
 }
 
 //创建一个协程池
-func NewPool(cap uint) *Pool {
+func NewPool(size uint) *Pool {
+	cc := common.Config.MsgDetailChanLen / 2
 	p := Pool{
-		TaskChannel:  make(chan *Task),
-		workerNumber: cap,
-		JobsChannel:  make(chan *Task),
+		TaskChannel:  make(chan *Task, cc),
+		workerNumber: size,
+		JobsChannel:  make(chan *Task, cc),
 	}
 	return &p
 }
@@ -28,14 +33,22 @@ func (p *Pool) Run() {
 	for i = 0; i < p.workerNumber; i++ {
 		go p.worker(i)
 	}
+	cc := common.Config.MsgDetailChanLen / 2
 	for {
-		task := <-p.TaskChannel
-		p.JobsChannel <- task
+		if uint(len(p.JobsChannel)) < cc {
+			p.JobsChannel <- <-p.TaskChannel
+		}
 	}
 }
 
 func (p *Pool) AddTask(task *Task) {
-	p.TaskChannel <- task
+	cc := common.Config.MsgDetailChanLen / 2
+	for {
+		if uint(len(p.TaskChannel)) < cc {
+			p.TaskChannel <- task
+			break
+		}
+	}
 }
 
 func (p *Pool) Close() {
