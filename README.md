@@ -87,3 +87,13 @@ config目录是配置目录，具体看配置文件注释
 启动server `path/to/server ../config(相对路径，client的配置文件目录)`
 
 启动client `path/to/client ../config(相对路径，client的配置文件目录)`
+
+## 快速运行/编译脚本
+go.sh为快速运行/编译脚本
+```shell script
+go.sh run|build server|client
+```
+dmq.sh为编译后运行脚本
+```shell script
+dmq.sh start|stop|restart client|server
+```
