@@ -151,10 +151,10 @@ func checkParams(single singleRequest, fromIp string) error {
 func checkCommand(request singleRequest) error {
 	cmd, exists := common.Config.CommandMap[common.GetConfigCmdKey(request.Cmd)]
 	if exists == false {
-		return common.ThrowNotice(common.ErrorCodeUnknowCommand, errors.New("存在未知的cmd"))
+		return common.ThrowNotice(common.ErrorCodeUnknownCommand, errors.New("存在未知的cmd"))
 	}
 	if cmd.Project != request.Project {
-		return common.ThrowNotice(common.ErrorCodeUnknowCommand, errors.New("不匹配的cmd和project"))
+		return common.ThrowNotice(common.ErrorCodeUnknownCommand, errors.New("不匹配的cmd和project"))
 	}
 	return nil
 }
@@ -172,5 +172,5 @@ func checkProduct(request singleRequest, ip string) error {
 			}
 		}
 	}
-	return common.ThrowNotice(common.ErrorCodeUnknowProduct, errors.New("不合法的消息来源"))
+	return common.ThrowNotice(common.ErrorCodeUnknownProduct, errors.New("不合法的消息来源"))
 }

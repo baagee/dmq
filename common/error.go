@@ -4,8 +4,8 @@ const (
 	ErrorCodeDefault           = 100
 	ErrorCodeParseParamsFailed = ErrorCodeDefault + iota
 	ErrorCodeValidateFailed
-	ErrorCodeUnknowProduct
-	ErrorCodeUnknowCommand
+	ErrorCodeUnknownProduct
+	ErrorCodeUnknownCommand
 	ErrorCodeJsonMarshal
 	ErrorCodeRedisSave
 	ErrorCodeFoundBucketsFailed
