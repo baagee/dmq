@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/baagee/dmq/common"
+	"github.com/baagee/dmq/taskpool"
 	"log"
 	"net/http"
 	"strconv"
@@ -16,6 +17,7 @@ type App struct {
 	msgPointChan  chan string
 	msgBucketChan chan string
 	msgDetailChan chan common.Message
+	workerPool    *taskpool.Pool
 }
 
 //获取要执行的时间点
@@ -117,6 +119,17 @@ func (app *App) GetBucketMessages() {
 	}
 }
 
+//添加消费任务
+func (app *App) addConsumerTask(consumer common.ConsumerConfig, msg *common.Message) {
+	//log.Println("put consume task into task pool...")
+	app.workerPool.AddTask(taskpool.NewTask(func(workId uint) error {
+		//log.Println(fmt.Sprintf("workId#%d start runing", workId))
+		app.consume(consumer, msg, workId)
+		//log.Println(fmt.Sprintf("workId#%d end run", workId))
+		return nil
+	}))
+}
+
 // 执行命令
 func (app *App) DoMessageCmd() {
 	//通过recover保证一个协程失败 不影响其他协程
@@ -129,14 +142,24 @@ func (app *App) DoMessageCmd() {
 		msg := <-app.msgDetailChan
 		consumerList := common.Config.CommandMap[common.GetConfigCmdKey(msg.Cmd)].ConsumerList
 		for _, consumer := range consumerList {
-			// 一个协程处理一个消费者
-			go app.consume(consumer, &msg)
+			// 一个协程处理一个消费者 放到工作池中
+			app.addConsumerTask(consumer, &msg)
 		}
 	}
 }
 
+//关闭工作池
+func (app *App) CloseWorkPool() {
+	app.workerPool.Close()
+}
+
+//开启工作池
+func (app *App) RunWorkPool() {
+	go app.workerPool.Run()
+}
+
 // 消费
-func (app *App) consume(consumer common.ConsumerConfig, msg *common.Message) {
+func (app *App) consume(consumer common.ConsumerConfig, msg *common.Message, workId uint) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("Error: %+v", r)
@@ -157,7 +180,7 @@ func (app *App) consume(consumer common.ConsumerConfig, msg *common.Message) {
 	for ; retry <= consumer.RetryTimes; retry++ {
 		// 加上重试次数
 		curUrl := url + "&retry=" + strconv.FormatUint(uint64(retry), 10)
-		err := app.requestConsumer(msg, curUrl, consumer.Timeout)
+		err := app.requestConsumer(msg, curUrl, consumer.Timeout, workId)
 		if err != nil {
 			field := common.GetMessageStatusHashField(consumer.Host, consumer.Path)
 			common.RecordError(errors.New(fmt.Sprintf("%s retry=%d %s", field, retry, err.Error())))
@@ -181,7 +204,7 @@ func (app *App) consume(consumer common.ConsumerConfig, msg *common.Message) {
 }
 
 //真正的消费
-func (app *App) requestConsumer(msg *common.Message, url string, timeout uint) error {
+func (app *App) requestConsumer(msg *common.Message, url string, timeout uint, workId uint) error {
 	var jsonBytes = []byte(msg.Params)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
 	if err != nil {
@@ -205,6 +228,6 @@ func (app *App) requestConsumer(msg *common.Message, url string, timeout uint) e
 	if resp.StatusCode != 200 {
 		return common.ThrowNotice(common.ErrorCodeResponseCodeNot200, errors.New("response code!=200"))
 	}
-	log.Printf("request consumer [%s] cost time:%dms\n", url, time.Now().Sub(startTime)/time.Millisecond)
+	log.Printf("workId [%d] request [%s] cost time:%dms\n", workId, url, time.Now().Sub(startTime)/time.Millisecond)
 	return nil
 }

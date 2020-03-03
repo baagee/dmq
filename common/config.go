@@ -24,6 +24,7 @@ type baseConfig struct {
 	MsgDetailChanLen     uint            `yaml:"msg_detail_chan_len"`
 	BucketCoroutineCount uint            `yaml:"bucket_coroutine_count"`
 	MsgCoroutineCount    uint            `yaml:"msg_coroutine_count"`
+	WorkPoolSize         uint            `yaml:"work_pool_size"`
 	DisableSuccessLog    uint            `yaml:"disable_success_log"`
 	RequestTraceIdKey    string          `yaml:"request_trace_id_key"`
 	Redis                redisConfig     `yaml:"redis"`

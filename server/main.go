@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/baagee/dmq/common"
+	"github.com/baagee/dmq/taskpool"
 	"log"
 )
 
@@ -11,6 +12,7 @@ func main() {
 		msgDetailChan: make(chan common.Message, common.Config.MsgDetailChanLen),
 		msgPointChan:  make(chan string, common.Config.MsgPointChanLen),
 		msgBucketChan: make(chan string, common.Config.MsgBucketChanLen),
+		workerPool:    taskpool.NewPool(common.Config.WorkPoolSize),
 	}
 	// 一个协程获取point时刻的bucket
 	go app.GetPointBuckets()
@@ -24,6 +26,12 @@ func main() {
 	for j = 0; j < common.Config.MsgCoroutineCount; j++ {
 		go app.DoMessageCmd()
 	}
-	//处理point
+	app.RunWorkPool()
+	//开启工作池
+	defer func() {
+		app.CloseWorkPool()
+	}()
+
+	//检查消息时间点
 	app.GetPointFromRedis()
 }
