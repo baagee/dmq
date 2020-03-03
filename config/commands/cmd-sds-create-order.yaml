@@ -1,5 +1,5 @@
 # 属于哪个项目 如果sds发送了一个 svs:create:order 的命令就不会成功
-# 如果多个羡慕的cmd重名了怎么办？？cmd上加前缀/后缀啊... 还能怎么办
+# 如果多个相同的cmd重名了怎么办？？cmd上加前缀/后缀啊... 还能怎么办
 project: sds
 # 命令点
 command: sds:create:order

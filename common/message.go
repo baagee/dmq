@@ -121,7 +121,7 @@ func switchStatus(status int) string {
 	case MessageStatusFailed:
 		return "failed"
 	default:
-		return "unknow"
+		return "unknown"
 	}
 }
 
