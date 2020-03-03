@@ -55,7 +55,6 @@ func (app *App) getProductPoint(product common.ProductConfig) {
 		common.RecordError(err1)
 		return
 	}
-	log.Println("FUCK")
 	if ret {
 		// 删除成功 放入pointChan
 		app.msgPointChan <- point
