@@ -50,13 +50,16 @@ func (app *App) getProductPoint(product common.ProductConfig) {
 	}
 
 	//到点了 可以执行了 先删除
-	err = msg.RemoveTimePoint(point)
-	if err != nil {
-		common.RecordError(err)
+	ret, err1 := msg.RemoveTimePoint(point)
+	if err1 != nil {
+		common.RecordError(err1)
 		return
 	}
-	// 放入pointChan
-	app.msgPointChan <- point
+	log.Println("FUCK")
+	if ret {
+		// 删除成功 放入pointChan
+		app.msgPointChan <- point
+	}
 }
 
 // 获取buckets

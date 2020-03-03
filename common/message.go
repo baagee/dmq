@@ -158,12 +158,17 @@ func (m *Message) GetTimePoint() (redis.Z, error) {
 }
 
 //删除时间点
-func (m *Message) RemoveTimePoint(point string) error {
-	_, err := RedisCli.ZRem(GetPointGroup(m.Project), point).Result()
+func (m *Message) RemoveTimePoint(point string) (bool, error) {
+	remCount, err := RedisCli.ZRem(GetPointGroup(m.Project), point).Result()
 	if err != nil {
-		return ThrowNotice(ErrorCodeRemovePointFailed, err)
+		return false, ThrowNotice(ErrorCodeRemovePointFailed, err)
 	}
-	return nil
+	if remCount > 0 {
+		// 如果真删除了返回true
+		return true, nil
+	}
+	// 没有删除 可能已经被删除了
+	return false, ThrowNotice(ErrorCodeRemovePointFailed, errors.New(fmt.Sprintf("时间点[%s]已被清除", point)))
 }
 
 // 获取时间点的buckets
