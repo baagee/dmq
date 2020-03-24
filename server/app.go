@@ -36,29 +36,12 @@ func (app *App) getProductPoint(product common.ProductConfig) {
 	msg := common.Message{
 		Project: product.Project,
 	}
-	member, err := msg.GetTimePoint()
+	point, err := msg.GetTimePoint()
 	if err != nil {
 		common.RecordError(err)
 		return
 	}
-	if member.Member == nil {
-		return
-	}
-	point := member.Member.(string)
-	score := int64(member.Score)
-	if time.Now().Unix() < score {
-		// 还没到点
-		return
-	}
-
-	//到点了 可以执行了 先删除
-	ret, err1 := msg.RemoveTimePoint(point)
-	if err1 != nil {
-		common.RecordError(err1)
-		return
-	}
-	if ret {
-		// 删除成功 放入pointChan
+	if point != "" {
 		app.msgPointChan <- point
 	}
 }

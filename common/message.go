@@ -145,31 +145,71 @@ func (m *Message) CheckExists() uint64 {
 	return m.Id
 }
 
-//获取最近的时间点
-func (m *Message) GetTimePoint() (redis.Z, error) {
-	zRes, err := RedisCli.ZRangeWithScores(GetPointGroup(m.Project), 0, 0).Result()
+////获取最近的时间点
+//func (m *Message) GetTimePoint() (redis.Z, error) {
+//	zRes, err := RedisCli.ZRangeWithScores(GetPointGroup(m.Project), 0, 0).Result()
+//	if err != nil {
+//		return redis.Z{}, ThrowNotice(ErrorCodeFoundPointFailed, err)
+//	}
+//	if len(zRes) == 1 {
+//		return zRes[0], nil
+//	}
+//	return redis.Z{}, nil
+//}
+
+// 获取最近的时间点并删除 lua script 保证原子性
+func (m *Message) GetTimePoint() (string, error) {
+	var luaScript = `
+local key = KEYS[1]
+-- max score
+local _end= ARGV[1]
+
+local res=redis.call('ZRANGEBYSCORE', key, 0, _end, 'WITHSCORES', 'LIMIT', 0, 1)
+if (#res == 0) then
+-- empty return 0
+    return 0
+else
+    if (redis.call('ZREM', key, res[1]) == 1) then
+    -- rem success return res
+        return res
+    else
+    -- rem failed return false
+        return false
+    end
+end
+`
+	cmdSha, err := RedisCli.ScriptLoad(luaScript).Result()
 	if err != nil {
-		return redis.Z{}, ThrowNotice(ErrorCodeFoundPointFailed, err)
+		return "", ThrowNotice(ErrorCodeFoundPointFailed, err)
 	}
-	if len(zRes) == 1 {
-		return zRes[0], nil
+	zRes, err := RedisCli.EvalSha(cmdSha, []string{GetPointGroup(m.Project)}, time.Now().Unix()).Result()
+	if err != nil {
+		return "", ThrowNotice(ErrorCodeFoundPointFailed, err)
 	}
-	return redis.Z{}, nil
+	if zRes == false {
+		return "", ThrowNotice(ErrorCodeFoundPointFailed, errors.New("lua: point delete failed"))
+	}
+	if zRes == int64(0) {
+		return "", nil
+	}
+	//转化为string
+	point := zRes.([]interface{})[0].(string)
+	return point, nil
 }
 
-//删除时间点
-func (m *Message) RemoveTimePoint(point string) (bool, error) {
-	remCount, err := RedisCli.ZRem(GetPointGroup(m.Project), point).Result()
-	if err != nil {
-		return false, ThrowNotice(ErrorCodeRemovePointFailed, err)
-	}
-	if remCount > 0 {
-		// 如果真删除了返回true
-		return true, nil
-	}
-	// 没有删除 可能已经被删除了
-	return false, ThrowNotice(ErrorCodeRemovePointFailed, errors.New(fmt.Sprintf("时间点[%s]已被清除", point)))
-}
+////删除时间点
+//func (m *Message) RemoveTimePoint(point string) (bool, error) {
+//	remCount, err := RedisCli.ZRem(GetPointGroup(m.Project), point).Result()
+//	if err != nil {
+//		return false, ThrowNotice(ErrorCodeRemovePointFailed, err)
+//	}
+//	if remCount > 0 {
+//		// 如果真删除了返回true
+//		return true, nil
+//	}
+//	// 没有删除 可能已经被删除了
+//	return false, ThrowNotice(ErrorCodeRemovePointFailed, errors.New(fmt.Sprintf("时间点[%s]已被清除", point)))
+//}
 
 // 获取时间点的buckets
 func (m *Message) GetPointBuckets(point string) ([]string, error) {
