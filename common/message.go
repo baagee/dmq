@@ -39,6 +39,7 @@ func (m *Message) Save() error {
 	cm, exists := Config.CommandMap[GetConfigCmdKey(m.Cmd)]
 	//配置文件储存了这个cmd的配置
 	if exists {
+		msgStr := string(bytes)
 		// 每个消息针对每个消费者的状态
 		messageStatusMap := make(map[string]interface{}, len(cm.ConsumerList))
 		for _, consumer := range cm.ConsumerList {
@@ -61,9 +62,9 @@ func (m *Message) Save() error {
 		bucketName := GetBucketName(m.Bucket, pointName)
 		redisTx.SAdd(pointName, bucketName)
 
-		// 3 将任务放入当前时刻当前bucket的任务列表
-		messageListName := GetMessageListName(bucketName)
-		redisTx.LPush(messageListName, string(bytes))
+		// 3 将任务hash放入当前时刻当前bucket的任务列表
+		messageListName := GetMessageHashListName(bucketName)
+		redisTx.LPush(messageListName, m.hash)
 
 		//4 将任务状态保存
 		messageStatusHashKey := GetMessageStatusHashName(m.Id)
@@ -80,7 +81,7 @@ func (m *Message) Save() error {
 
 		// 6 增加消息标记 便于去重 通过hash可以查看m详情 hash=>m
 		// 保存消息全部信息 key=hash value=json_encode(m)
-		redisTx.Set(GetMsgRedisFlagKey(m.hash), string(bytes), expireTime) //expireTime
+		redisTx.Set(GetMessageDetailKey(m.hash), msgStr, expireTime) //expireTime
 
 		//提交
 		_, err = redisTx.Exec()
@@ -128,7 +129,7 @@ func switchStatus(status int) string {
 //检查消息是否存在 存在就返回已存在的消息ID
 func (m *Message) CheckExists() uint64 {
 	m.hash = StringHash(fmt.Sprintf("%s:%d:%s:%s:%s", m.Cmd, m.Timestamp, m.Params, m.Project, m.Bucket))
-	ret, err := RedisCli.Get(GetMsgRedisFlagKey(m.hash)).Result()
+	ret, err := RedisCli.Get(GetMessageDetailKey(m.hash)).Result()
 	if err != nil {
 		if err != redis.Nil {
 			RecordError(err)
@@ -226,24 +227,37 @@ func (m *Message) GetPointBuckets(point string) ([]string, error) {
 }
 
 // 从redis获取bucket对应的任务
-func (m *Message) GetBucketMessages(bucket string) []string {
-	var detailList []string
-	messageListName := GetMessageListName(bucket)
-	for {
-		itemDetail, err := RedisCli.RPop(messageListName).Result()
-		if err != nil {
-			if err == redis.Nil {
-				//redis rpop读取完毕
-				break
-			} else {
-				RecordError(err)
-				continue
-			}
-		}
-		if itemDetail != "" {
-			detailList = append(detailList, itemDetail)
-		}
+func (m *Message) GetBucketMessages(bucket string) []Message {
+	var detailList []Message
+	// 获取bucket list的所有hash
+	messageHashListName := GetMessageHashListName(bucket)
+	hashList, err := RedisCli.LRange(messageHashListName, 0, -1).Result()
+	if err != nil {
+		RecordError(err)
+		return detailList
 	}
+	// 批量通过hash获取消息
+	var hashKeyList []string
+	for _, h := range hashList {
+		hashKeyList = append(hashKeyList, GetMessageDetailKey(h))
+	}
+	msgStrList, err2 := RedisCli.MGet(hashKeyList...).Result()
+	if err2 != nil {
+		RecordError(err)
+		return detailList
+	}
+	for _, msgStr := range msgStrList {
+		var newMsg Message
+		msgStr2 := msgStr.(interface{}).(string)
+		err := json.Unmarshal([]byte(msgStr2), &newMsg)
+		if err != nil {
+			RecordError(err)
+			continue
+		}
+		detailList = append(detailList, newMsg)
+	}
+	// 销毁bucket
+	RedisCli.Del(messageHashListName).Result()
 	return detailList
 }
 

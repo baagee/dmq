@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/baagee/dmq/common"
@@ -88,22 +87,16 @@ func (app *App) GetBucketMessages() {
 			continue
 		}
 		var msg common.Message
-		msgJsonList := msg.GetBucketMessages(bucket)
+		msgList := msg.GetBucketMessages(bucket)
 
-		for _, jsonStr := range msgJsonList {
-			var m common.Message
-			err := json.Unmarshal([]byte(jsonStr), &m)
-			if err != nil {
-				common.RecordError(err)
-				continue
-			}
-			app.msgDetailChan <- m
+		for _, itemMsg := range msgList {
+			app.msgDetailChan <- itemMsg
 		}
 	}
 }
 
 //添加消费任务
-func (app *App) addConsumerTask(consumer common.ConsumerConfig, msg *common.Message) {
+func (app *App) addConsumerTask(consumer *common.ConsumerConfig, msg *common.Message) {
 	//log.Println("put consume task into task pool...")
 	app.workerPool.AddTask(taskpool.NewTask(func(workId uint) error {
 		//log.Println(fmt.Sprintf("workId#%d start runing", workId))
@@ -126,7 +119,7 @@ func (app *App) DoMessageCmd() {
 		consumerList := common.Config.CommandMap[common.GetConfigCmdKey(msg.Cmd)].ConsumerList
 		for _, consumer := range consumerList {
 			// 一个协程处理一个消费者 放到工作池中
-			app.addConsumerTask(consumer, &msg)
+			app.addConsumerTask(&consumer, &msg)
 		}
 	}
 }
@@ -142,7 +135,7 @@ func (app *App) RunWorkPool() {
 }
 
 // 消费
-func (app *App) consume(consumer common.ConsumerConfig, msg *common.Message, workId uint) {
+func (app *App) consume(consumer *common.ConsumerConfig, msg *common.Message, workId uint) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("Error: %+v", r)
