@@ -10,13 +10,6 @@ import (
 	"time"
 )
 
-const (
-	MessageStatusWaiting = 1 //默认状态
-	MessageStatusDoing   = 2 //正在消费
-	MessageStatusDone    = 3 //消费完
-	MessageStatusFailed  = 4 //消费失败
-)
-
 type Message struct {
 	Id         uint64 `json:"id"`          // 消息ID
 	Cmd        string `json:"cmd"`         // command
@@ -146,40 +139,9 @@ func (m *Message) CheckExists() uint64 {
 	return m.Id
 }
 
-////获取最近的时间点
-//func (m *Message) GetTimePoint() (redis.Z, error) {
-//	zRes, err := RedisCli.ZRangeWithScores(GetPointGroup(m.Project), 0, 0).Result()
-//	if err != nil {
-//		return redis.Z{}, ThrowNotice(ErrorCodeFoundPointFailed, err)
-//	}
-//	if len(zRes) == 1 {
-//		return zRes[0], nil
-//	}
-//	return redis.Z{}, nil
-//}
-
 // 获取最近的时间点并删除 lua script 保证原子性
 func (m *Message) GetTimePoint() (string, error) {
-	var luaScript = `
-local key = KEYS[1]
--- max score
-local _end= ARGV[1]
-
-local res=redis.call('ZRANGEBYSCORE', key, 0, _end, 'WITHSCORES', 'LIMIT', 0, 1)
-if (#res == 0) then
--- empty return 0
-    return 0
-else
-    if (redis.call('ZREM', key, res[1]) == 1) then
-    -- rem success return res
-        return res
-    else
-    -- rem failed return false
-        return false
-    end
-end
-`
-	cmdSha, err := RedisCli.ScriptLoad(luaScript).Result()
+	cmdSha, err := RedisCli.ScriptLoad(GetTimePointLuaScript).Result()
 	if err != nil {
 		return "", ThrowNotice(ErrorCodeFoundPointFailed, err)
 	}
@@ -197,20 +159,6 @@ end
 	point := zRes.([]interface{})[0].(string)
 	return point, nil
 }
-
-////删除时间点
-//func (m *Message) RemoveTimePoint(point string) (bool, error) {
-//	remCount, err := RedisCli.ZRem(GetPointGroup(m.Project), point).Result()
-//	if err != nil {
-//		return false, ThrowNotice(ErrorCodeRemovePointFailed, err)
-//	}
-//	if remCount > 0 {
-//		// 如果真删除了返回true
-//		return true, nil
-//	}
-//	// 没有删除 可能已经被删除了
-//	return false, ThrowNotice(ErrorCodeRemovePointFailed, errors.New(fmt.Sprintf("时间点[%s]已被清除", point)))
-//}
 
 // 获取时间点的buckets
 func (m *Message) GetPointBuckets(point string) ([]string, error) {

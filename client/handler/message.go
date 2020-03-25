@@ -100,7 +100,7 @@ func save(singleList batchRequest, fromIp string) []interface{} {
 		}
 		if single.Timestamp == 0 {
 			// 时间为0 表示当前时间 立即执行
-			single.Timestamp = uint64(time.Now().Unix())
+			single.Timestamp = uint64(time.Now().Unix()) - 1
 		}
 		msg := common.Message{
 			Cmd:        single.Cmd,
