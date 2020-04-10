@@ -14,6 +14,10 @@ func main() {
 		msgBucketChan: make(chan string, common.Config.MsgBucketChanLen),
 		workerPool:    taskpool.NewPool(common.Config.WorkPoolSize),
 	}
+	err := common.LoadLuaScript()
+	if err != nil {
+		common.ExitWithNotice(common.ThrowNotice(common.ErrorCodeRedisLoadLuaFailed, err))
+	}
 	// 一个协程获取point时刻的bucket
 	go app.GetPointBuckets()
 

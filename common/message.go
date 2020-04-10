@@ -141,11 +141,7 @@ func (m *Message) CheckExists() uint64 {
 
 // 获取最近的时间点并删除 lua script 保证原子性
 func (m *Message) GetTimePoint() (string, error) {
-	cmdSha, err := RedisCli.ScriptLoad(GetTimePointLuaScript).Result()
-	if err != nil {
-		return "", ThrowNotice(ErrorCodeFoundPointFailed, err)
-	}
-	zRes, err := RedisCli.EvalSha(cmdSha, []string{GetPointGroup(m.Project)}, time.Now().Unix()).Result()
+	zRes, err := RedisCli.EvalSha(GetTimePointSha, []string{GetPointGroup(m.Project)}, time.Now().Unix()).Result()
 	if err != nil {
 		return "", ThrowNotice(ErrorCodeFoundPointFailed, err)
 	}

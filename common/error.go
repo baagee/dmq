@@ -16,6 +16,7 @@ const (
 	ErrorCodePreRequestFailed
 	ErrorCodeRequestFailed
 	ErrorCodeGetStatusFailed
+	ErrorCodeRedisLoadLuaFailed
 )
 
 type ThrowAble interface {

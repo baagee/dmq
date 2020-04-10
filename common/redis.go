@@ -8,7 +8,9 @@ import (
 )
 
 var (
-	RedisCli *redis.Client
+	RedisCli        *redis.Client
+	GetTimePointSha string
+	//SaveMessageSha  string
 )
 
 func init() {
@@ -30,4 +32,14 @@ func init() {
 		panic("connect redis error:" + err.Error())
 	}
 	log.Println("connect redis success")
+}
+
+//提前加载lua script到redis里
+func LoadLuaScript() error {
+	cmdSha, err := RedisCli.ScriptLoad(GetTimePointLuaScript).Result()
+	if err != nil {
+		return err
+	}
+	GetTimePointSha = cmdSha
+	return nil
 }
