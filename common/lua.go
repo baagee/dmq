@@ -44,7 +44,7 @@ redis.call('SADD', pointName, bucketName)
 redis.call('LPUSH', messageListName, msgHash)
 
 -- 4 将任务状态保存
-if (string.sub(_VERSION,5)>='5.2') then
+if (tonumber(string.sub(_VERSION,5))>=5.2) then
     redis.call('HMSET', messageStatusHashKey, table.unpack(ARGV, 5))
 else
     redis.call('HMSET', messageStatusHashKey, unpack(ARGV, 5))
