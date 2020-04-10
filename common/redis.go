@@ -10,7 +10,7 @@ import (
 var (
 	RedisCli        *redis.Client
 	GetTimePointSha string
-	//SaveMessageSha  string
+	SaveMessageSha  string
 )
 
 func init() {
@@ -41,5 +41,11 @@ func LoadLuaScript() error {
 		return err
 	}
 	GetTimePointSha = cmdSha
+
+	cmdSha2, err2 := RedisCli.ScriptLoad(SaveMessageLuaScript).Result()
+	if err2 != nil {
+		return err2
+	}
+	SaveMessageSha = cmdSha2
 	return nil
 }

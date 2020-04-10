@@ -29,57 +29,44 @@ func (m *Message) Save() error {
 		return ThrowNotice(ErrorCodeJsonMarshal, err)
 	}
 
-	cm, exists := Config.CommandMap[GetConfigCmdKey(m.Cmd)]
+	consume, exists := Config.CommandMap[GetConfigCmdKey(m.Cmd)]
 	//配置文件储存了这个cmd的配置
 	if exists {
-		msgStr := string(bytes)
-		// 每个消息针对每个消费者的状态
-		messageStatusMap := make(map[string]interface{}, len(cm.ConsumerList))
-		for _, consumer := range cm.ConsumerList {
-			// ID=>status 消息状态 hash=msgId:status field=consumer value=status
-			messageStatusMap[GetMessageStatusHashField(consumer.Host, consumer.Path)] = MessageStatusWaiting
-		}
-		// 消息标记过期时间 从现在到消息的执行时间后n天 这段时间不允许重复
-		expireTime := time.Duration(m.Timestamp+3600*24*uint64(Config.MsgNoRepeatDay)-uint64(time.Now().Unix())) * time.Second
-		// 开始redis事务
-		redisTx := RedisCli.TxPipeline()
-		// 1 保存point
-		pointName := GetPointName(m.Project, m.Timestamp)
 		pointGroupName := GetPointGroup(m.Project)
-		redisTx.ZAdd(pointGroupName, redis.Z{
-			Score:  float64(m.Timestamp),
-			Member: pointName,
-		})
-
-		// 2 增加时间点的bucket
+		pointName := GetPointName(m.Project, m.Timestamp)
 		bucketName := GetBucketName(m.Bucket, pointName)
-		redisTx.SAdd(pointName, bucketName)
-
-		// 3 将任务hash放入当前时刻当前bucket的任务列表
 		messageListName := GetMessageHashListName(bucketName)
-		redisTx.LPush(messageListName, m.hash)
-
-		//4 将任务状态保存
 		messageStatusHashKey := GetMessageStatusHashName(m.Id)
-		redisTx.HMSet(messageStatusHashKey, messageStatusMap)
-		// 设置过期时间 2*expireTime
-		redisTx.Expire(messageStatusHashKey, 2*expireTime)
-
-		// 5 增加 project Y-m-d-H 按天纬度记录ID和hash 过期时间 expireTime
-		//			id=>hash的关系 后面可以根据hash获取消息详情
 		id2hashDayKey := GetProjectDayHashKey(m.Project, m.Timestamp)
 		id2hashIdFieldKey := GetMessageId2HashFieldKey(m.Id)
-		redisTx.HSet(id2hashDayKey, id2hashIdFieldKey, m.hash)
-		redisTx.Expire(id2hashDayKey, expireTime) //和下面的详情保持一样的过期时间
+		messageDetailKey := GetMessageDetailKey(m.hash)
 
-		// 6 增加消息标记 便于去重 通过hash可以查看m详情 hash=>m
-		// 保存消息全部信息 key=hash value=json_encode(m)
-		redisTx.Set(GetMessageDetailKey(m.hash), msgStr, expireTime) //expireTime
+		pointScore := strconv.FormatUint(m.Timestamp, 10)
+		msgHash := m.hash
+		expireTimeD := time.Duration(m.Timestamp+3600*24*uint64(Config.MsgNoRepeatDay)-uint64(time.Now().Unix())) * time.Second
+		expireTime := strconv.FormatFloat(expireTimeD.Seconds(), 'f', 0, 64)
+		msgStr := string(bytes)
 
-		//提交
-		_, err = redisTx.Exec()
+		keys := []string{
+			pointGroupName, pointName, bucketName, messageListName, messageStatusHashKey,
+			id2hashDayKey, id2hashIdFieldKey, messageDetailKey,
+		}
+		args := []string{pointScore, msgHash, expireTime, msgStr}
+
+		// 每个消息针对每个消费者的状态
+		for _, consumer := range consume.ConsumerList {
+			// ID=>status 消息状态 hash=msgId:status field=consumer value=status
+			args = append(args, GetMessageStatusHashField(consumer.Host, consumer.Path))
+			args = append(args, strconv.Itoa(MessageStatusWaiting))
+		}
+
+		zRes, err := RedisCli.EvalSha(SaveMessageSha, keys, args).Result()
+		result := zRes.(interface{}).(int64)
 		if err != nil {
 			return ThrowNotice(ErrorCodeRedisSave, err)
+		}
+		if result != int64(1) {
+			return ThrowNotice(ErrorCodeRedisSave, errors.New("lua: message save failed"))
 		}
 	} else {
 		return ThrowNotice(ErrorCodeRedisSave, errors.New("不合法的cmd"))

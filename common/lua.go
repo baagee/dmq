@@ -29,10 +29,10 @@ local messageStatusHashKey = KEYS[5]
 local id2hashDayKey = KEYS[6]
 local id2hashIdFieldKey = KEYS[7]
 local messageDetailKey = KEYS[8]
-local pointScore= ARGV[1]
-local msgHash= ARGV[2]
-local expireTime= ARGV[3]
-local msgStr= ARGV[4]
+local pointScore = tonumber(ARGV[1])
+local msgHash = ARGV[2]
+local expireTime = tonumber(ARGV[3])
+local msgStr = ARGV[4]
 
 -- 1 保存point
 redis.call('ZADD', pointGroupName, pointScore, pointName)
@@ -59,5 +59,5 @@ redis.call('EXPIRE', id2hashDayKey, expireTime)
 -- 6 增加消息标记 便于去重 通过hash可以查看m详情 hash=>m 保存消息全部信息 key=hash value=json_encode(m)
 redis.call('SETEX', messageDetailKey, expireTime, msgStr)
 
-return true`
+return 1`
 )
