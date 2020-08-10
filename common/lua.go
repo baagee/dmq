@@ -26,11 +26,9 @@ local pointName = KEYS[2]
 local bucketName = KEYS[3]
 local messageListName = KEYS[4]
 local messageStatusHashKey = KEYS[5]
-local id2hashDayKey = KEYS[6]
-local id2hashIdFieldKey = KEYS[7]
-local messageDetailKey = KEYS[8]
+local messageDetailKey = KEYS[6]
 local pointScore = tonumber(ARGV[1])
-local msgHash = ARGV[2]
+local msgId = ARGV[2]
 local expireTime = tonumber(ARGV[3])
 local msgStr = ARGV[4]
 
@@ -41,7 +39,7 @@ redis.call('ZADD', pointGroupName, pointScore, pointName)
 redis.call('SADD', pointName, bucketName)
 
 -- 3 将任务hash放入当前时刻当前bucket的任务列表
-redis.call('LPUSH', messageListName, msgHash)
+redis.call('LPUSH', messageListName, msgId)
 
 -- 4 将任务状态保存
 if (tonumber(string.sub(_VERSION,5))>=5.2) then
@@ -52,11 +50,7 @@ end
 
 redis.call('EXPIRE', messageStatusHashKey, 2*expireTime)
 
--- 5 增加 project Y-m-d-H 按天纬度记录ID和hash 过期时间 expireTime id=>hash的关系 后面可以根据hash获取消息详情
-redis.call('HSET', id2hashDayKey, id2hashIdFieldKey, msgHash)
-redis.call('EXPIRE', id2hashDayKey, expireTime)
-
--- 6 增加消息标记 便于去重 通过hash可以查看m详情 hash=>m 保存消息全部信息 key=hash value=json_encode(m)
+-- 5 保存消息详细信息 通过msgId可以查看m详情 id=>m 保存消息全部信息 key=id value=json_encode(m)
 redis.call('SETEX', messageDetailKey, expireTime, msgStr)
 
 return 1`

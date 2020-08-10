@@ -111,17 +111,12 @@ func save(singleList batchRequest, fromIp string) []interface{} {
 			RequestId:  single.RequestId,
 			CreateTime: uint64(time.Now().Unix()),
 		}
-		// 验证消息是否重复
-		// 获取消息hash 查询redis判断是否存在
-		if mId := msg.CheckExists(); mId == 0 {
-			// 不存在 就保存 获取msgId
-			msg.Id = common.GenerateId(int64(i), idBaseNumber, int64(length))
-			err := msg.Save()
-			if err != nil {
-				common.RecordError(err)
-				ret[i] = false //消息保存失败 返回false
-				continue
-			}
+		msg.Id = common.GenerateId(int64(i), idBaseNumber, int64(length))
+		err = msg.Save()
+		if err != nil {
+			common.RecordError(err)
+			ret[i] = false //消息保存失败 返回false
+			continue
 		}
 		ret[i] = msg.Id //消息保存成功 返回消息ID
 		log.Printf("message: %+v\n", msg)

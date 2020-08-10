@@ -99,8 +99,8 @@ func GetBucketName(bucket string, pointName string) string {
 }
 
 // 获取储存消息的list名字
-func GetMessageHashListName(bucketName string) string {
-	return fmt.Sprintf("%s:message:hash:list", bucketName)
+func GetMessageIdListName(bucketName string) string {
+	return fmt.Sprintf("%s:message:id:list", bucketName)
 }
 
 //	获取消息状态的hash key 小时区分
@@ -113,27 +113,14 @@ func GetMessageStatusHashField(host string, path string) string {
 	return fmt.Sprintf("%s:consumer:%s%s", RedisKeyPrefix, host, path)
 }
 
-//那个项目哪天每小时的消息 hash key
-func GetProjectDayHashKey(project string, timestamp uint64) string {
-	hour := time.Unix(int64(timestamp), 0).Format("2006-01-02-15")
-	// 那个项目哪天的消息
-	return fmt.Sprintf("%s:%s:messages:hour:%s:id2hash", RedisKeyPrefix, project, hour)
-}
-
-// hash 中 id field字段
-func GetMessageId2HashFieldKey(msgId uint64) string {
-	//  id和hash的关系
-	return fmt.Sprintf("%s:message:%d:hash", RedisKeyPrefix, msgId)
-}
-
 //获取配置信息的cmd map key
 func GetConfigCmdKey(cmd string) string {
 	return fmt.Sprintf("cmd-%s", strings.Replace(cmd, ":", "-", -1))
 }
 
 // 消息是否存在的hash key
-func GetMessageDetailKey(hash string) string {
-	return fmt.Sprintf("%s:message:detail:%s", RedisKeyPrefix, hash)
+func GetMessageDetailKey(msgId uint64) string {
+	return fmt.Sprintf("%s:message:detail:%d", RedisKeyPrefix, msgId)
 }
 
 // 记录错误信息

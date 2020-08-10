@@ -3,8 +3,6 @@ package common
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"github.com/go-redis/redis"
 	"log"
 	"strconv"
 	"time"
@@ -19,7 +17,6 @@ type Message struct {
 	Bucket     string `json:"bucket"`      // 消息桶
 	CreateTime uint64 `json:"create_time"` // 创建时间
 	RequestId  string `json:"request_id"`  // 请求ID
-	hash       string // 消息体唯一标示 下游获取不到 因为json encode时就没有了
 }
 
 //保存消息
@@ -35,23 +32,19 @@ func (m *Message) Save() error {
 		pointGroupName := GetPointGroup(m.Project)
 		pointName := GetPointName(m.Project, m.Timestamp)
 		bucketName := GetBucketName(m.Bucket, pointName)
-		messageListName := GetMessageHashListName(bucketName)
+		messageListName := GetMessageIdListName(bucketName)
 		messageStatusHashKey := GetMessageStatusHashName(m.Id)
-		id2hashDayKey := GetProjectDayHashKey(m.Project, m.Timestamp)
-		id2hashIdFieldKey := GetMessageId2HashFieldKey(m.Id)
-		messageDetailKey := GetMessageDetailKey(m.hash)
+		messageDetailKey := GetMessageDetailKey(m.Id)
 
 		pointScore := strconv.FormatUint(m.Timestamp, 10)
-		msgHash := m.hash
 		expireTimeD := time.Duration(m.Timestamp+3600*24*uint64(Config.MsgNoRepeatDay)-uint64(time.Now().Unix())) * time.Second
 		expireTime := strconv.FormatFloat(expireTimeD.Seconds(), 'f', 0, 64)
 		msgStr := string(bytes)
 
 		keys := []string{
-			pointGroupName, pointName, bucketName, messageListName, messageStatusHashKey,
-			id2hashDayKey, id2hashIdFieldKey, messageDetailKey,
+			pointGroupName, pointName, bucketName, messageListName, messageStatusHashKey, messageDetailKey,
 		}
-		args := []string{pointScore, msgHash, expireTime, msgStr}
+		args := []string{pointScore, strconv.FormatUint(m.Id, 10), expireTime, msgStr}
 
 		// 每个消息针对每个消费者的状态
 		for _, consumer := range consume.ConsumerList {
@@ -106,26 +99,6 @@ func switchStatus(status int) string {
 	}
 }
 
-//检查消息是否存在 存在就返回已存在的消息ID
-func (m *Message) CheckExists() uint64 {
-	m.hash = StringHash(fmt.Sprintf("%s:%d:%s:%s:%s", m.Cmd, m.Timestamp, m.Params, m.Project, m.Bucket))
-	ret, err := RedisCli.Get(GetMessageDetailKey(m.hash)).Result()
-	if err != nil {
-		if err != redis.Nil {
-			RecordError(err)
-		}
-		// 不存在
-		return 0
-	}
-
-	err = json.Unmarshal([]byte(ret), m)
-	if err != nil {
-		RecordError(err)
-		return 0
-	}
-	return m.Id
-}
-
 // 获取最近的时间点并删除 lua script 保证原子性
 func (m *Message) GetTimePoint() (string, error) {
 	zRes, err := RedisCli.EvalSha(GetTimePointSha, []string{GetPointGroup(m.Project)}, time.Now().Unix()).Result()
@@ -161,16 +134,21 @@ func (m *Message) GetPointBuckets(point string) ([]string, error) {
 func (m *Message) GetBucketMessages(bucket string) []Message {
 	var detailList []Message
 	// 获取bucket list的所有hash
-	messageHashListName := GetMessageHashListName(bucket)
-	hashList, err := RedisCli.LRange(messageHashListName, 0, -1).Result()
+	messageIdListName := GetMessageIdListName(bucket)
+	msgIdList, err := RedisCli.LRange(messageIdListName, 0, -1).Result()
 	if err != nil {
 		RecordError(err)
 		return detailList
 	}
 	// 批量通过hash获取消息
 	var hashKeyList []string
-	for _, h := range hashList {
-		hashKeyList = append(hashKeyList, GetMessageDetailKey(h))
+	for _, msgId := range msgIdList {
+		idInt, err2 := strconv.ParseInt(msgId, 10, 64)
+		if err2 != nil {
+			RecordError(err2)
+			continue
+		}
+		hashKeyList = append(hashKeyList, GetMessageDetailKey(uint64(idInt)))
 	}
 	msgStrList, err2 := RedisCli.MGet(hashKeyList...).Result()
 	if err2 != nil {
@@ -188,7 +166,7 @@ func (m *Message) GetBucketMessages(bucket string) []Message {
 		detailList = append(detailList, newMsg)
 	}
 	// 销毁bucket
-	RedisCli.Del(messageHashListName).Result()
+	RedisCli.Del(messageIdListName).Result()
 	return detailList
 }
 
