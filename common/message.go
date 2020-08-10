@@ -37,7 +37,7 @@ func (m *Message) Save() error {
 		messageDetailKey := GetMessageDetailKey(m.Id)
 
 		pointScore := strconv.FormatUint(m.Timestamp, 10)
-		expireTimeD := time.Duration(m.Timestamp+3600*24*uint64(Config.MsgNoRepeatDay)-uint64(time.Now().Unix())) * time.Second
+		expireTimeD := time.Duration(m.Timestamp+3600*24*uint64(Config.MsgSaveDays)-uint64(time.Now().Unix())) * time.Second
 		expireTime := strconv.FormatFloat(expireTimeD.Seconds(), 'f', 0, 64)
 		msgStr := string(bytes)
 
