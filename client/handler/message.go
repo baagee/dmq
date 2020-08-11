@@ -49,6 +49,32 @@ func MessageStatus(writer http.ResponseWriter, request *http.Request) {
 	responseWithJson(writer, respBody)
 }
 
+//获取消息详细信息
+func MessageDetail(writer http.ResponseWriter, request *http.Request) {
+	msgId := request.URL.Query().Get("msg_id")
+	msgIdInt, err := strconv.Atoi(msgId)
+	if err != nil {
+		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("msgId为空")))
+		return
+	}
+	if msgIdInt == 0 {
+		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("不是合法的msgId")))
+		return
+	}
+	msg := common.Message{
+		Id: uint64(msgIdInt),
+	}
+
+	err = msg.GetMessageDetail()
+	if err != nil {
+		responseWithError(writer, common.ThrowNotice(common.ErrorCodeGetMessageFailed, err))
+		return
+	}
+	var respBody responseBody
+	respBody.Data = msg
+	responseWithJson(writer, respBody)
+}
+
 // 单个请求
 func SingleMessage(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()

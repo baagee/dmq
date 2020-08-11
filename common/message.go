@@ -187,3 +187,19 @@ func (m *Message) SetMessageStatus(host string, path string, status int) {
 		RecordError(err)
 	}
 }
+
+// 获取消息详情
+func (m *Message) GetMessageDetail() error {
+	msgJson, err := RedisCli.Get(GetMessageDetailKey(m.Id)).Result()
+	if len(msgJson) == 0 {
+		return ThrowNotice(ErrorCodeGetMessageFailed, errors.New("没找到对应的消息 msgId:"+strconv.FormatUint(m.Id, 10)))
+	}
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal([]byte(msgJson), m)
+	if err != nil {
+		return err
+	}
+	return nil
+}

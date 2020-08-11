@@ -15,6 +15,7 @@ const (
 	ErrorCodePreRequestFailed
 	ErrorCodeRequestFailed
 	ErrorCodeGetStatusFailed
+	ErrorCodeGetMessageFailed
 	ErrorCodeRedisLoadLuaFailed
 )
 
