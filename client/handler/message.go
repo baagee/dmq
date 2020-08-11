@@ -96,6 +96,7 @@ func save(singleList batchRequest, fromIp string) []interface{} {
 		if err != nil {
 			//参数验证失败 返回 错误信息
 			ret[i] = err.Error()
+			common.RecordError(err)
 			continue
 		}
 		if single.Timestamp == 0 {
