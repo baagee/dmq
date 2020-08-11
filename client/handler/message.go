@@ -26,6 +26,11 @@ type batchRequest []singleRequest
 //获取消息状态
 func MessageStatus(writer http.ResponseWriter, request *http.Request) {
 	msgId := request.URL.Query().Get("msg_id")
+	consumerName := request.URL.Query().Get("consumer")
+	if len(consumerName) == 0 {
+		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("consumer为空")))
+		return
+	}
 	msgIdInt, err := strconv.Atoi(msgId)
 	if err != nil {
 		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("msgId为空")))
@@ -39,9 +44,9 @@ func MessageStatus(writer http.ResponseWriter, request *http.Request) {
 		Id: uint64(msgIdInt),
 	}
 
-	ret, err1 := msg.Status()
+	ret, err1 := msg.Status(consumerName)
 	if err1 != nil {
-		responseWithError(writer, common.ThrowNotice(common.ErrorCodeGetStatusFailed, err))
+		responseWithError(writer, common.ThrowNotice(common.ErrorCodeGetStatusFailed, err1))
 		return
 	}
 	var respBody responseBody

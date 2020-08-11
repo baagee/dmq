@@ -65,15 +65,13 @@ response:
 }
 ```
 
-#### `/api/message/status?msg_id=15771179759758`接口为查看消息消费的状态
+#### `/api/message/status?msg_id=15771179759758&consumer=consumer_name`接口为查看消息消费的状态
 response:
 ```json
 {
-  "code": 0,
-  "message": "",
-  "data": {
-    "dmq:consumer:10.190.40.90:8959/api/mytest/test/noticeuser": "waiting" // 消费者和对应的消费状态 waiting/doing/done/failed/unknown
-  }
+    "code": 0,
+    "message": "",
+    "data": "done"//waiting/doing/done/failure/unknown
 }
 ```
 

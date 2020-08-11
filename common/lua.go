@@ -15,7 +15,7 @@ else
     -- rem success return res
         return res
     else
-    -- rem failed return false
+    -- rem failure return false
         return false
     end
 end`

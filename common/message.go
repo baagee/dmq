@@ -3,6 +3,8 @@ package common
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/go-redis/redis"
 	"log"
 	"strconv"
 	"time"
@@ -59,7 +61,7 @@ func (m *Message) Save() error {
 			return ThrowNotice(ErrorCodeRedisSave, err)
 		}
 		if result != int64(1) {
-			return ThrowNotice(ErrorCodeRedisSave, errors.New("lua: message save failed"))
+			return ThrowNotice(ErrorCodeRedisSave, errors.New("lua: message save failure"))
 		}
 	} else {
 		return ThrowNotice(ErrorCodeRedisSave, errors.New("不合法的cmd"))
@@ -68,19 +70,22 @@ func (m *Message) Save() error {
 }
 
 //获取消息消费状态
-func (m *Message) Status() (map[string]string, error) {
-	consumerStatus, err := RedisCli.HGetAll(GetMessageStatusHashName(m.Id)).Result()
+func (m *Message) Status(consumerName string) (string, error) {
+	consumerStatus, err := RedisCli.HGet(GetMessageStatusHashName(m.Id), GetMessageStatusHashField(consumerName)).Result()
 	if err != nil {
-		return map[string]string{}, err
-	}
-	for consumer, status := range consumerStatus {
-		s, err := strconv.Atoi(status)
-		if err != nil {
-			return map[string]string{}, err
+		if err == redis.Nil {
+			return "", errors.New(fmt.Sprintf("%d:%s消息状态不存在", m.Id, consumerName))
 		}
-		consumerStatus[consumer] = switchStatus(s)
+		return "", err
 	}
-	return consumerStatus, nil
+	if len(consumerStatus) == 0 {
+		return "", errors.New(fmt.Sprintf("%d:%s消息状态不存在", m.Id, consumerName))
+	}
+	s, err2 := strconv.Atoi(consumerStatus)
+	if err2 != nil {
+		return "", err2
+	}
+	return switchStatus(s), nil
 }
 
 //消息数字状态转化为字符串描述
@@ -93,7 +98,7 @@ func switchStatus(status int) string {
 	case MessageStatusDone:
 		return "done"
 	case MessageStatusFailed:
-		return "failed"
+		return "failure"
 	default:
 		return "unknown"
 	}
@@ -106,7 +111,7 @@ func (m *Message) GetTimePoint() (string, error) {
 		return "", ThrowNotice(ErrorCodeFoundPointFailed, err)
 	}
 	if zRes == false {
-		return "", ThrowNotice(ErrorCodeFoundPointFailed, errors.New("lua: point delete failed"))
+		return "", ThrowNotice(ErrorCodeFoundPointFailed, errors.New("lua: point delete failure"))
 	}
 	if zRes == int64(0) {
 		return "", nil
@@ -175,7 +180,7 @@ func (m *Message) SetMessageStatus(consumerName string, status int) {
 	field := GetMessageStatusHashField(consumerName)
 	messageStatusHashKey := GetMessageStatusHashName(m.Id)
 	if status == MessageStatusFailed {
-		log.Printf("message: %d %s failed", m.Id, field)
+		log.Printf("message: %d %s failure", m.Id, field)
 	} else if status == MessageStatusDone {
 		if Config.DisableSuccessLog == 0 {
 			// 不输出消费成功的log

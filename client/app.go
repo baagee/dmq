@@ -23,10 +23,18 @@ func (app *App) Init() *App {
 
 // 绑定路由
 func (app *App) BindRouter() *App {
+	//提交单个消息
 	http.Handle("/api/message/single", app.alice.ThenFunc(handler.SingleMessage))
+	//批量提交消息
 	http.Handle("/api/message/batch", app.alice.ThenFunc(handler.BatchMessage))
+	//查看消息消费状态
 	http.Handle("/api/message/status", app.alice.ThenFunc(handler.MessageStatus))
+	//查看消息详情
 	http.Handle("/api/message/detail", app.alice.ThenFunc(handler.MessageDetail))
+	/*//查看消息失败待处理列表
+	http.Handle("/api/message/pending", app.alice.ThenFunc(handler.MessageDetail))
+	//设置消息消费成功已处理
+	http.Handle("/api/message/solved", app.alice.ThenFunc(handler.MessageDetail))*/
 	return app
 }
 
