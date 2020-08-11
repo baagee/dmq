@@ -158,8 +158,8 @@ func (app *App) consume(consumer *common.ConsumerConfig, msg *common.Message, wo
 		curUrl := url + "&retry=" + strconv.FormatUint(uint64(retry), 10)
 		err := app.requestConsumer(msg, curUrl, consumer.Timeout, workId)
 		if err != nil {
-			field := common.GetMessageStatusHashField(consumer.Host, consumer.Path)
-			common.RecordError(errors.New(fmt.Sprintf("%s retry=%d %s", field, retry, err.Error())))
+			//field := common.GetMessageStatusHashField(consumer.Host, consumer.Path)
+			common.RecordError(errors.New(fmt.Sprintf("%s msg_id=%d retry=%d %s", consumer.Name, msg.Id, retry, err.Error())))
 			//稍微休息一下
 			if retry < consumer.RetryTimes {
 				// 最后一次不需要休息了
