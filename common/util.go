@@ -45,7 +45,7 @@ func GetYamlConfig(configFile string, mc interface{}) error {
 
 // 输出错误信息并退出
 func ExitWithNotice(notice Notice) {
-	fmt.Println("Error: " + notice.Error())
+	log.Println("Error: " + notice.Error())
 	os.Exit(notice.Code())
 }
 
