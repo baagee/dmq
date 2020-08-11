@@ -10,7 +10,6 @@ const (
 	ErrorCodeRedisSave
 	ErrorCodeFoundBucketsFailed
 	ErrorCodeFoundPointFailed
-	ErrorCodeRemovePointFailed
 	ErrorCodeRemoveBucketsFailed
 	ErrorCodeResponseCodeNot200
 	ErrorCodePreRequestFailed
