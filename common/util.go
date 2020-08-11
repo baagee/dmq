@@ -109,8 +109,8 @@ func GetMessageStatusHashName(id uint64) string {
 }
 
 //	获取消息状态的hash field key
-func GetMessageStatusHashField(host string, path string) string {
-	return fmt.Sprintf("%s:consumer:%s%s", RedisKeyPrefix, host, path)
+func GetMessageStatusHashField(consumerName string) string {
+	return fmt.Sprintf("%s:consumer:%s", RedisKeyPrefix, consumerName)
 }
 
 //获取配置信息的cmd map key

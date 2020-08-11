@@ -26,7 +26,7 @@ func (m *Message) Save() error {
 		return ThrowNotice(ErrorCodeJsonMarshal, err)
 	}
 
-	consume, exists := Config.CommandMap[GetConfigCmdKey(m.Cmd)]
+	consumer, exists := Config.CommandMap[GetConfigCmdKey(m.Cmd)]
 	//配置文件储存了这个cmd的配置
 	if exists {
 		pointGroupName := GetPointGroup(m.Project)
@@ -47,9 +47,9 @@ func (m *Message) Save() error {
 		args := []string{pointScore, strconv.FormatUint(m.Id, 10), expireTime, msgStr}
 
 		// 每个消息针对每个消费者的状态
-		for _, consumer := range consume.ConsumerList {
+		for _, consumer := range consumer.ConsumerList {
 			// ID=>status 消息状态 hash=msgId:status field=consumer value=status
-			args = append(args, GetMessageStatusHashField(consumer.Host, consumer.Path))
+			args = append(args, GetMessageStatusHashField(consumer.Name))
 			args = append(args, strconv.Itoa(MessageStatusWaiting))
 		}
 
@@ -171,8 +171,8 @@ func (m *Message) GetBucketMessages(bucket string) []Message {
 }
 
 //设置消息消费状态
-func (m *Message) SetMessageStatus(host string, path string, status int) {
-	field := GetMessageStatusHashField(host, path)
+func (m *Message) SetMessageStatus(consumerName string, status int) {
+	field := GetMessageStatusHashField(consumerName)
 	messageStatusHashKey := GetMessageStatusHashName(m.Id)
 	if status == MessageStatusFailed {
 		log.Printf("message: %d %s failed", m.Id, field)

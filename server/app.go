@@ -144,13 +144,14 @@ func (app *App) consume(consumer *common.ConsumerConfig, msg *common.Message, wo
 		}
 	}()
 	// 状态设置组成正在做
-	msg.SetMessageStatus(consumer.Host, consumer.Path, common.MessageStatusDoing)
-	url := common.GetConsumerFullUrl(consumer.Host, consumer.Path, msg.Id)
+	msg.SetMessageStatus(consumer.Name, common.MessageStatusDoing)
 	var (
 		// 重试次数
 		retry uint = 0
-		//是否请求成功
-		success = false
+		//是否请求成功 默认消息状态为失败
+		messageStatus = common.MessageStatusFailed
+		//请求的url
+		url = common.GetConsumerFullUrl(consumer.Host, consumer.Path, msg.Id)
 	)
 	// 重试机制
 	for ; retry <= consumer.RetryTimes; retry++ {
@@ -167,16 +168,11 @@ func (app *App) consume(consumer *common.ConsumerConfig, msg *common.Message, wo
 			}
 			continue
 		}
-		success = true
+		messageStatus = common.MessageStatusDone //消费成功状态
 		break
 	}
-	if success {
-		// 成功后改状态为消费成功
-		msg.SetMessageStatus(consumer.Host, consumer.Path, common.MessageStatusDone)
-	} else {
-		// 失败后改状态为消费失败
-		msg.SetMessageStatus(consumer.Host, consumer.Path, common.MessageStatusFailed)
-	}
+
+	msg.SetMessageStatus(consumer.Name, messageStatus)
 }
 
 //真正的消费
