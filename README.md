@@ -77,6 +77,26 @@ response:
 }
 ```
 
+
+#### `/api/message/detail?msg_id=15771179759758`接口为查看消息详细信息
+response:
+```json
+{
+    "code": 0,
+    "message": "",
+    "data": {
+        "id": 15971219465821,
+        "cmd": "ddd:create:order",
+        "timestamp": 1597121929,
+        "params": "{\"user_id\":88}",
+        "project": "sds",
+        "bucket": "sds_bucket_5",
+        "create_time": 1597121930,
+        "request_id": ""
+    }
+}
+```
+
 ### server端负责处理消息，到时间点时让消费者处理消息
 
 ## 使用
