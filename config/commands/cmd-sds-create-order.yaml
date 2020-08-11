@@ -6,12 +6,14 @@ command: sds:create:order
 # 请求消费者下游的接口列表 可以是多个下游消费
 consumer_list:
   - host: 127.0.0.1:8959
+    name: dgfa #消费者名字
     path: "/api/mytest/test/createorder"
     timeout: 600 # 请求超时时间ms
     retry_times: 3 # 重试次数
     interval: 500 #ms 重试时间间隔
 
   - host: 127.0.0.1:8959
+    name: fghyds #消费者名字
     path: "/api/mytest/test/createorder"
     timeout: 600
     retry_times: 2

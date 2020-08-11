@@ -6,6 +6,7 @@ command: svs:notice:user
 # 请求下游的接口列表 可以是多个下游消费
 consumer_list:
   - host: 127.0.0.1:8959
+    name: wet234 #消费者名字
     path: "/api/mytest/test/noticeuser"
     timeout: 600 #ms
     retry_times: 3 # 重试次数
