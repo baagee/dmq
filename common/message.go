@@ -181,6 +181,7 @@ func (m *Message) SetMessageStatus(consumerName string, status int) {
 	messageStatusHashKey := GetMessageStatusHashName(m.Id)
 	if status == MessageStatusFailed {
 		log.Printf("message: %d %s failure", m.Id, field)
+		//消费失败添加到失败列表
 		_, err := RedisCli.ZAdd(GetMessagePendingKey(consumerName), redis.Z{
 			Score:  float64(m.Timestamp),
 			Member: m.Id,
@@ -193,7 +194,15 @@ func (m *Message) SetMessageStatus(consumerName string, status int) {
 			// 不输出消费成功的log
 			log.Printf("message: %d %s success", m.Id, field)
 		}
+		// 消费成功从失败列表删除
+		count, err := RedisCli.ZRem(GetMessagePendingKey(consumerName), m.Id).Result()
+		if err != nil {
+			RecordError(errors.New(fmt.Sprintf("delete pending message:%s failure:%s", m.Id, err.Error())))
+		} else {
+			log.Printf("delete pending message:%d res:%d", m.Id, count)
+		}
 	}
+	//更新消费状态
 	_, err := RedisCli.HSet(messageStatusHashKey, field, status).Result()
 	if err != nil {
 		RecordError(err)

@@ -20,6 +20,11 @@ type singleRequest struct {
 	Bucket    string `json:"bucket" validate:"required"`  // 消息桶
 }
 
+type consumerMsgIds struct {
+	MsgIds       []uint64 `json:"msg_ids"`
+	ConsumerName string   `json:"consumer"`
+}
+
 //批量请求结构体
 type batchRequest []singleRequest
 
@@ -82,6 +87,37 @@ func MessageDetail(writer http.ResponseWriter, request *http.Request) {
 	}
 	var respBody responseBody
 	respBody.Data = msg
+	responseWithJson(writer, respBody)
+}
+
+// 解决未处理的消息
+func MessageSolved(writer http.ResponseWriter, request *http.Request) {
+	defer request.Body.Close()
+	var cmIds consumerMsgIds
+	if err := json.NewDecoder(request.Body).Decode(&cmIds); err != nil {
+		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("不是合法的json")))
+		return
+	}
+	if checkConsumerExists(cmIds.ConsumerName) == false {
+		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("consumer不存在")))
+		return
+	}
+	//TODO 去重
+	if len(cmIds.MsgIds) == 0 {
+		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("msg_ids不存在")))
+		return
+	} else if len(cmIds.MsgIds) > 150 {
+		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("msg_ids最多支持150个")))
+		return
+	}
+	for _, msgId := range cmIds.MsgIds {
+		msg := common.Message{
+			Id: msgId,
+		}
+		msg.SetMessageStatus(cmIds.ConsumerName, common.MessageStatusDone)
+	}
+	var respBody responseBody
+	respBody.Data = true
 	responseWithJson(writer, respBody)
 }
 
