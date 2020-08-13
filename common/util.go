@@ -202,7 +202,7 @@ func AutoSplitLog(logType string) {
 		for {
 			<-ticker.C
 			if FileExists(logFile) {
-				CopyFile(logFile, logFile+time.Now().Format("20060102150405")+".log")
+				CopyFile(logFile, logFile+time.Now().Format("2006010215")+".log")
 				os.Truncate(logFile, 0)
 			}
 		}
