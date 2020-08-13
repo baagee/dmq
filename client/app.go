@@ -31,9 +31,9 @@ func (app *App) BindRouter() *App {
 	http.Handle("/api/message/status", app.alice.ThenFunc(handler.MessageStatus))
 	//查看消息详情
 	http.Handle("/api/message/detail", app.alice.ThenFunc(handler.MessageDetail))
-	/*//查看消息失败待处理列表
-	http.Handle("/api/message/pending", app.alice.ThenFunc(handler.MessageDetail))
-	//设置消息消费成功已处理
+	//查看消息失败待处理ID列表
+	http.Handle("/api/message/pending", app.alice.ThenFunc(handler.PendingMessageIdList))
+	/*//设置消息消费成功已处理
 	http.Handle("/api/message/solved", app.alice.ThenFunc(handler.MessageDetail))*/
 	return app
 }

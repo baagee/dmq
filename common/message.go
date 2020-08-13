@@ -181,6 +181,13 @@ func (m *Message) SetMessageStatus(consumerName string, status int) {
 	messageStatusHashKey := GetMessageStatusHashName(m.Id)
 	if status == MessageStatusFailed {
 		log.Printf("message: %d %s failure", m.Id, field)
+		_, err := RedisCli.ZAdd(GetMessagePendingKey(consumerName), redis.Z{
+			Score:  float64(m.Timestamp),
+			Member: m.Id,
+		}).Result()
+		if err != nil {
+			log.Printf("add message pending list failure:%s", err.Error())
+		}
 	} else if status == MessageStatusDone {
 		if Config.DisableSuccessLog == 0 {
 			// 不输出消费成功的log
@@ -207,4 +214,17 @@ func (m *Message) GetMessageDetail() error {
 		return err
 	}
 	return nil
+}
+
+//查看没有消费的消息IdList
+func (m *Message) GetPendingMessageIdList(consumer string, start string, end string) ([]redis.Z, error) {
+	listRes, err := RedisCli.ZRangeByScoreWithScores(GetMessagePendingKey(consumer), redis.ZRangeBy{
+		Min: start,
+		Max: end,
+	}).Result()
+	if err != nil {
+		log.Println("get pending message failure:" + err.Error())
+		return nil, ThrowNotice(ErrorCodeGetPendingFailed, errors.New("获取未消费消息ID失败"))
+	}
+	return listRes, nil
 }

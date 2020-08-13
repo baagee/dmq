@@ -124,6 +124,11 @@ func GetMessageDetailKey(msgId uint64) string {
 	return fmt.Sprintf("%s:message:detail:%d", RedisKeyPrefix, msgId)
 }
 
+// 未处理的消息列表key
+func GetMessagePendingKey(consumer string) string {
+	return fmt.Sprintf("%s:message:pending:%s", RedisKeyPrefix, consumer)
+}
+
 // 记录错误信息
 func RecordError(err error) {
 	switch n := err.(type) {

@@ -27,8 +27,8 @@ type batchRequest []singleRequest
 func MessageStatus(writer http.ResponseWriter, request *http.Request) {
 	msgId := request.URL.Query().Get("msg_id")
 	consumerName := request.URL.Query().Get("consumer")
-	if len(consumerName) == 0 {
-		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("consumer为空")))
+	if checkConsumerExists(consumerName) == false {
+		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("consumer不存在")))
 		return
 	}
 	msgIdInt, err := strconv.Atoi(msgId)
@@ -56,6 +56,11 @@ func MessageStatus(writer http.ResponseWriter, request *http.Request) {
 
 //获取消息详细信息
 func MessageDetail(writer http.ResponseWriter, request *http.Request) {
+	consumer := request.URL.Query().Get("consumer")
+	if checkConsumerExists(consumer) == false {
+		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("consumer不存在")))
+		return
+	}
 	msgId := request.URL.Query().Get("msg_id")
 	msgIdInt, err := strconv.Atoi(msgId)
 	if err != nil {
@@ -77,6 +82,35 @@ func MessageDetail(writer http.ResponseWriter, request *http.Request) {
 	}
 	var respBody responseBody
 	respBody.Data = msg
+	responseWithJson(writer, respBody)
+}
+
+//获取未处理消息ID列表
+func PendingMessageIdList(writer http.ResponseWriter, request *http.Request) {
+	consumer := request.URL.Query().Get("consumer")
+	if checkConsumerExists(consumer) == false {
+		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("consumer不存在")))
+		return
+	}
+	start := request.URL.Query().Get("start")
+	end := request.URL.Query().Get("end")
+	if len(start) == 0 {
+		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("不是合法的start")))
+		return
+	}
+	if len(end) == 0 {
+		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("不是合法的end")))
+		return
+	}
+
+	msg := common.Message{}
+	msgIdList, err := msg.GetPendingMessageIdList(consumer, start, end)
+	if err != nil {
+		responseWithError(writer, common.ThrowNotice(common.ErrorCodeGetMessageFailed, err))
+		return
+	}
+	var respBody responseBody
+	respBody.Data = msgIdList
 	responseWithJson(writer, respBody)
 }
 
@@ -113,6 +147,21 @@ func BatchMessage(writer http.ResponseWriter, request *http.Request) {
 	var respBody responseBody
 	respBody.Data = save(singleList, common.GetClientIP(request))
 	responseWithJson(writer, respBody)
+}
+
+//检查消费者是否存在
+func checkConsumerExists(consumer string) bool {
+	if len(consumer) == 0 {
+		return false
+	}
+	for _, command := range common.Config.CommandMap {
+		for _, consumerConfig := range command.ConsumerList {
+			if consumerConfig.Name == consumer {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 //保存命令
