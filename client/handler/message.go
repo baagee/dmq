@@ -102,7 +102,6 @@ func MessageSolved(writer http.ResponseWriter, request *http.Request) {
 		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("consumer不存在")))
 		return
 	}
-	//TODO 去重
 	if len(cmIds.MsgIds) == 0 {
 		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("msg_ids不存在")))
 		return
@@ -110,14 +109,19 @@ func MessageSolved(writer http.ResponseWriter, request *http.Request) {
 		responseWithError(writer, common.ThrowNotice(common.ErrorCodeParseParamsFailed, errors.New("msg_ids最多支持150个")))
 		return
 	}
+	ret := make(map[uint64]bool, len(cmIds.MsgIds))
 	for _, msgId := range cmIds.MsgIds {
+		if _, ok := ret[msgId]; ok {
+			continue //已经存在了 跳过
+		}
 		msg := common.Message{
 			Id: msgId,
 		}
-		msg.SetMessageStatus(cmIds.ConsumerName, common.MessageStatusDone)
+		res := msg.SetMessageStatus(cmIds.ConsumerName, common.MessageStatusDone, true)
+		ret[msgId] = res
 	}
 	var respBody responseBody
-	respBody.Data = true
+	respBody.Data = ret
 	responseWithJson(writer, respBody)
 }
 

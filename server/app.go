@@ -144,7 +144,7 @@ func (app *App) consume(consumer *common.ConsumerConfig, msg *common.Message, wo
 		}
 	}()
 	// 状态设置组成正在做
-	msg.SetMessageStatus(consumer.Name, common.MessageStatusDoing)
+	msg.SetMessageStatus(consumer.Name, common.MessageStatusDoing, false)
 	var (
 		// 重试次数
 		retry uint = 0
@@ -172,7 +172,7 @@ func (app *App) consume(consumer *common.ConsumerConfig, msg *common.Message, wo
 		break
 	}
 
-	msg.SetMessageStatus(consumer.Name, messageStatus)
+	msg.SetMessageStatus(consumer.Name, messageStatus, false)
 }
 
 //真正的消费

@@ -176,7 +176,7 @@ func (m *Message) GetBucketMessages(bucket string) []Message {
 }
 
 //设置消息消费状态
-func (m *Message) SetMessageStatus(consumerName string, status int) {
+func (m *Message) SetMessageStatus(consumerName string, status int, removeFromPending bool) bool {
 	field := GetMessageStatusHashField(consumerName)
 	messageStatusHashKey := GetMessageStatusHashName(m.Id)
 	if status == MessageStatusFailed {
@@ -187,26 +187,32 @@ func (m *Message) SetMessageStatus(consumerName string, status int) {
 			Member: m.Id,
 		}).Result()
 		if err != nil {
-			log.Printf("add message pending list failure:%s", err.Error())
+			RecordError(errors.New(fmt.Sprintf("add message:%d pending list failure:%s", m.Id, err.Error())))
+			return false
 		}
 	} else if status == MessageStatusDone {
 		if Config.DisableSuccessLog == 0 {
 			// 不输出消费成功的log
 			log.Printf("message: %d %s success", m.Id, field)
 		}
-		// 消费成功从失败列表删除
-		count, err := RedisCli.ZRem(GetMessagePendingKey(consumerName), m.Id).Result()
-		if err != nil {
-			RecordError(errors.New(fmt.Sprintf("delete pending message:%s failure:%s", m.Id, err.Error())))
-		} else {
-			log.Printf("delete pending message:%d res:%d", m.Id, count)
+		if removeFromPending {
+			// 消费成功从失败列表删除
+			count, err := RedisCli.ZRem(GetMessagePendingKey(consumerName), m.Id).Result()
+			if err != nil {
+				RecordError(errors.New(fmt.Sprintf("delete pending message:%d failure:%s", m.Id, err.Error())))
+				return false
+			} else {
+				log.Printf("delete pending message:%d res:%d", m.Id, count)
+			}
 		}
 	}
 	//更新消费状态
 	_, err := RedisCli.HSet(messageStatusHashKey, field, status).Result()
 	if err != nil {
-		RecordError(err)
+		RecordError(errors.New(fmt.Sprintf("hset message:%d status failure:%s", m.Id, err.Error())))
+		return false
 	}
+	return true
 }
 
 // 获取消息详情
