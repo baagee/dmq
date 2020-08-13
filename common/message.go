@@ -249,7 +249,6 @@ func (m *Message) GetPendingMessageIdList(consumer string, start string, end str
 func ClearConsumerPending(consumer string) {
 	end := time.Now().Unix() - int64(Config.MsgSaveDays*3600*24)
 	endStr := strconv.FormatInt(end, 10)
-	log.Println(GetMessagePendingKey(consumer))
 	count, err := RedisCli.ZRemRangeByScore(GetMessagePendingKey(consumer), "0", endStr).Result()
 	if err != nil {
 		RecordError(err)
