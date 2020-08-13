@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"gopkg.in/yaml.v2"
+	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -164,4 +165,46 @@ func StringHash(data string) string {
 	t := sha1.New()
 	t.Write([]byte(data))
 	return fmt.Sprintf("%x", t.Sum(nil))
+}
+
+// 拷贝文件
+func CopyFile(src, dst string) (int64, error) {
+	sourceFileStat, err1 := os.Stat(src)
+	if err1 != nil {
+		return 0, err1
+	}
+
+	if !sourceFileStat.Mode().IsRegular() {
+		return 0, fmt.Errorf("%s is not a regular file", src)
+	}
+
+	source, err2 := os.Open(src)
+	if err2 != nil {
+		return 0, err2
+	}
+	defer source.Close()
+
+	destination, err3 := os.Create(dst)
+	if err3 != nil {
+		return 0, err3
+	}
+	defer destination.Close()
+	nBytes, err4 := io.Copy(destination, source)
+	return nBytes, err4
+}
+
+//自动切割Log
+func AutoSplitLog(logType string) {
+	//切割日志
+	ticker := time.NewTicker(time.Second * 3600)
+	logFile := fmt.Sprintf("./log/%s.log", logType)
+	go func() {
+		for {
+			<-ticker.C
+			if FileExists(logFile) {
+				CopyFile(logFile, logFile+time.Now().Format("20060102150405")+".log")
+				os.Truncate(logFile, 0)
+			}
+		}
+	}()
 }

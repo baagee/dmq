@@ -8,5 +8,6 @@ func main() {
 	if err != nil {
 		common.ExitWithNotice(common.ThrowNotice(common.ErrorCodeRedisLoadLuaFailed, err))
 	}
+	common.AutoSplitLog("client")
 	app.Init().BindRouter().Run(common.Config.HttpPort)
 }

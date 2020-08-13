@@ -35,7 +35,7 @@ func main() {
 	defer func() {
 		app.CloseWorkPool()
 	}()
-
+	common.AutoSplitLog("server")
 	//检查消息时间点
 	app.GetPointFromRedis()
 }

@@ -9,6 +9,7 @@ if [[ $1 == "run" ]]; then
   #  运行
   if [[ $2 == "client" || $2 == "server" ]]; then
     echo "runing..."
+    rm -rf $basepath/log/$2.log
     go run $basepath/$2/*.go $basepath/config
   else
     echo "Usage:$0 run server|client"
