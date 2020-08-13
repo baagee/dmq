@@ -120,6 +120,7 @@ func (app *App) DoMessageCmd() {
 		for _, consumer := range consumerList {
 			// 一个协程处理一个消费者 放到工作池中
 			app.addConsumerTask(consumer, &msg)
+			common.ClearConsumerPending(consumer.Name)
 		}
 	}
 }

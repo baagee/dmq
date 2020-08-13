@@ -233,6 +233,7 @@ func (m *Message) GetMessageDetail() error {
 
 //查看没有消费的消息IdList
 func (m *Message) GetPendingMessageIdList(consumer string, start string, end string) ([]redis.Z, error) {
+	ClearConsumerPending(consumer)
 	listRes, err := RedisCli.ZRangeByScoreWithScores(GetMessagePendingKey(consumer), redis.ZRangeBy{
 		Min: start,
 		Max: end,
@@ -242,4 +243,17 @@ func (m *Message) GetPendingMessageIdList(consumer string, start string, end str
 		return nil, ThrowNotice(ErrorCodeGetPendingFailed, errors.New("获取未消费消息ID失败"))
 	}
 	return listRes, nil
+}
+
+//清楚过期的未处理的消息
+func ClearConsumerPending(consumer string) {
+	end := time.Now().Unix() - int64(Config.MsgSaveDays*3600*24)
+	endStr := strconv.FormatInt(end, 10)
+	log.Println(GetMessagePendingKey(consumer))
+	count, err := RedisCli.ZRemRangeByScore(GetMessagePendingKey(consumer), "0", endStr).Result()
+	if err != nil {
+		RecordError(err)
+	} else {
+		log.Printf("clear consumer:%s pending count:%d", consumer, count)
+	}
 }
