@@ -5,7 +5,7 @@ golang 基于redis实现的消息队列，支持延时消息，使用了协程�
 
 ### client端负责接收消息，提供http接口
 
-#### `/api/message/single`接口为提交一个消息
+#### POST `/api/message/single`接口为提交一个消息
 request:
 ```json
 {
@@ -26,7 +26,7 @@ response:
 }
 ```
 
-#### `/api/message/batch`接口为批量提交消息
+#### POST `/api/message/batch`接口为批量提交消息
 request:
 ```json
 [
@@ -65,7 +65,7 @@ response:
 }
 ```
 
-#### `/api/message/status?msg_id=15771179759758&consumer=consumer_name`接口为查看消息消费的状态
+#### GET `/api/message/status?msg_id=15771179759758&consumer=consumer_name`接口为查看消息消费的状态
 response:
 ```json
 {
@@ -76,7 +76,7 @@ response:
 ```
 
 
-#### `/api/message/detail?msg_id=15771179759758`接口为查看消息详细信息
+#### GET `/api/message/detail?msg_id=15771179759758&consumer=consumer_name`接口为查看消息详细信息
 response:
 ```json
 {
@@ -95,6 +95,58 @@ response:
 }
 ```
 
+#### GET `/api/message/pending?consumer=consumer_name&start=123456&end=987654`接口为查看这段时间消费失败的消息ID
+```json
+{
+    "code": 0,
+    "message": "",
+    "data": [
+        {
+            "Score": 1597360839,//消息本来要在这一秒消费
+            "Member": "15973617302072"//消息ID
+        }
+    ]
+}
+```
+
+#### GET `/api/message/detail?msg_id=15771179759758&consumer=consumer_name`接口为查看消息详细信息
+response:
+```json
+{
+    "code": 0,
+    "message": "",
+    "data": {
+        "id": 15971219465821,
+        "cmd": "ddd:create:order",
+        "timestamp": 1597121929,
+        "params": "{\"user_id\":88}",
+        "project": "sds",
+        "bucket": "sds_bucket_5",
+        "create_time": 1597121930,
+        "request_id": ""
+    }
+}
+```
+#### POST `/api/message/solved`接口为将这些消息设置为已消费状态
+request:
+```json
+{
+    "consumer":"consumer_name",//消费者
+    "msg_ids":[
+        15973612939410//处理的消息ID
+    ]
+}
+```
+response:
+```json
+{
+    "code": 0,
+    "message": "",
+    "data": {
+        "15973612939410": true//消息ID和对应的处理结果
+    }
+}
+```
 ### server端负责处理消息，到时间点时让消费者处理消息
 
 ## 使用
