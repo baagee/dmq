@@ -36,6 +36,7 @@ func main() {
 		app.CloseWorkPool()
 	}()
 	common.AutoSplitLog("server")
+	common.AutoClearExpirePending()
 	//检查消息时间点
 	app.GetPointFromRedis()
 }

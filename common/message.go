@@ -232,7 +232,7 @@ func (m *Message) GetMessageDetail() error {
 }
 
 //查看没有消费的消息IdList
-func (m *Message) GetPendingMessageIdList(consumer string, start string, end string) ([]redis.Z, error) {
+func (m *Message) GetPendingMessageIdList(consumer string, start string, end string) (map[string]interface{}, error) {
 	ClearConsumerPending(consumer)
 	listRes, err := RedisCli.ZRangeByScoreWithScores(GetMessagePendingKey(consumer), redis.ZRangeBy{
 		Min: start,
@@ -242,11 +242,16 @@ func (m *Message) GetPendingMessageIdList(consumer string, start string, end str
 		log.Println("get pending message failure:" + err.Error())
 		return nil, ThrowNotice(ErrorCodeGetPendingFailed, errors.New("获取未消费消息ID失败"))
 	}
-	return listRes, nil
+	ret := make(map[string]interface{})
+	count, _ := RedisCli.ZCount(GetMessagePendingKey(consumer), "-inf", "+inf").Result()
+	ret["list"] = listRes
+	ret["count"] = count
+	return ret, nil
 }
 
-//清楚过期的未处理的消息
+//清除过期的未处理的消息
 func ClearConsumerPending(consumer string) {
+	//查找要删除的消息最大时间点删除之前的消息
 	end := time.Now().Unix() - int64(Config.MsgSaveDays*3600*24)
 	endStr := strconv.FormatInt(end, 10)
 	count, err := RedisCli.ZRemRangeByScore(GetMessagePendingKey(consumer), "0", endStr).Result()
@@ -255,4 +260,19 @@ func ClearConsumerPending(consumer string) {
 	} else {
 		log.Printf("clear consumer:%s pending count:%d", consumer, count)
 	}
+}
+
+//定时任务清除已经被删除的未处理的消息ID
+func AutoClearExpirePending() {
+	ticker := time.NewTicker(time.Second * 3700)
+	go func() {
+		for {
+			<-ticker.C
+			for _, command := range Config.CommandMap {
+				for _, consumerConfig := range command.ConsumerList {
+					ClearConsumerPending(consumerConfig.Name)
+				}
+			}
+		}
+	}()
 }
